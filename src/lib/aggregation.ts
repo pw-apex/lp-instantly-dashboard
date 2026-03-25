@@ -1,83 +1,55 @@
-import type { Email, StepAnalytics } from './types';
+import type { StepAnalytics, StepAnalyticsRaw } from './types';
 import type { CampaignDetail } from './instantly';
 
 export function aggregateStepAnalytics(
-  sentEmails: Email[],
-  receivedEmails: Email[],
+  rawSteps: StepAnalyticsRaw[],
   campaignDetail?: CampaignDetail
 ): StepAnalytics[] {
-  // Count sent emails per step
-  const sentMap = new Map<string, number>();
-  for (const email of sentEmails) {
-    const key = email.step || '0_0_0';
-    sentMap.set(key, (sentMap.get(key) || 0) + 1);
-  }
+  if (!rawSteps || rawSteps.length === 0) return [];
 
-  // Count replies per step (received emails carry the step they're replying to)
-  const replyMap = new Map<string, number>();
-  for (const email of receivedEmails) {
-    const key = email.step || '0_0_0';
-    replyMap.set(key, (replyMap.get(key) || 0) + 1);
-  }
+  const steps: StepAnalytics[] = rawSteps.map((raw) => {
+    const stepIdx = parseInt(raw.step, 10) || 0;
+    const variantIdx = parseInt(raw.variant, 10) || 0;
 
-  // Get all unique step keys
-  const allSteps = new Set([...sentMap.keys(), ...replyMap.keys()]);
-
-  // Build step analytics
-  const steps: StepAnalytics[] = Array.from(allSteps).map((stepKey) => {
-    const parts = stepKey.split('_').map(Number);
-    const seqIdx = parts[0] || 0;
-    const stepIdx = parts[1] || 0;
-    const variantIdx = parts[2] || 0;
-
-    // Get subject from campaign detail: sequences[seqIdx].steps[stepIdx].variants[variantIdx].subject
+    // Get subject from campaign detail: sequences[0].steps[stepIdx].variants[variantIdx].subject
     let subject = `Step ${stepIdx + 1}`;
-    const variant = campaignDetail?.sequences?.[seqIdx]?.steps?.[stepIdx]?.variants?.[variantIdx];
+    const variant = campaignDetail?.sequences?.[0]?.steps?.[stepIdx]?.variants?.[variantIdx];
     if (variant?.subject) {
       subject = variant.subject;
     }
 
-    // If subject is still generic, try to get it from a sent email with this step
-    if (subject === `Step ${stepIdx + 1}`) {
-      const sampleEmail = sentEmails.find(e => e.step === stepKey);
-      if (sampleEmail?.subject) {
-        subject = sampleEmail.subject;
-      }
-    }
-
-    const sentCount = sentMap.get(stepKey) || 0;
-    const replyCount = replyMap.get(stepKey) || 0;
+    const openRate = raw.sent > 0 ? (raw.unique_opened / raw.sent) * 100 : 0;
 
     return {
-      step: stepKey,
+      stepIndex: stepIdx,
       stepNumber: stepIdx + 1,
+      variant: variantIdx,
       subject,
-      sentCount,
-      openedCount: 0, // Not available per-step from emails API
-      openRate: 0,
-      replyCount,
-      clickCount: 0,
+      sentCount: raw.sent,
+      openedCount: raw.unique_opened,
+      openRate,
+      replyCount: raw.unique_replies,
+      clickCount: raw.unique_clicks,
+      opportunityCount: raw.unique_opportunities,
       isBestOpen: false,
       isWorstOpen: false,
-      isBestReply: false,
-      isWorstReply: false,
     };
   });
 
-  // Sort by step number
-  steps.sort((a, b) => a.stepNumber - b.stepNumber);
+  // Sort by step number then variant
+  steps.sort((a, b) => a.stepIndex - b.stepIndex || a.variant - b.variant);
 
-  // Mark best/worst reply rates
+  // Mark best/worst open rates (only among steps with meaningful volume)
   if (steps.length > 1) {
     const withSent = steps.filter(s => s.sentCount > 10);
     if (withSent.length > 1) {
-      const replyRates = withSent.map(s => s.replyCount / s.sentCount);
-      const maxReply = Math.max(...replyRates);
-      const minReply = Math.min(...replyRates);
-      const bestIdx = replyRates.indexOf(maxReply);
-      const worstIdx = replyRates.indexOf(minReply);
-      if (bestIdx >= 0 && maxReply > 0) withSent[bestIdx].isBestReply = true;
-      if (worstIdx >= 0 && worstIdx !== bestIdx) withSent[worstIdx].isWorstReply = true;
+      const openRates = withSent.map(s => s.openRate);
+      const maxOpen = Math.max(...openRates);
+      const minOpen = Math.min(...openRates);
+      const bestIdx = openRates.indexOf(maxOpen);
+      const worstIdx = openRates.indexOf(minOpen);
+      if (bestIdx >= 0 && maxOpen > 0) withSent[bestIdx].isBestOpen = true;
+      if (worstIdx >= 0 && worstIdx !== bestIdx) withSent[worstIdx].isWorstOpen = true;
     }
   }
 

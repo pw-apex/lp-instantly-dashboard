@@ -132,7 +132,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                   {steps.map((step, i) => {
                     const isInitial = i === 0;
                     return (
-                      <div key={step.step} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                      <div key={`${step.stepIndex}-${step.variant}`} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                         <span
                           className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
                           style={{
@@ -153,7 +153,11 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                         </div>
                         <div className="flex gap-1.5 shrink-0">
                           <Pill label="Sent" value={step.sentCount.toLocaleString()} />
+                          <Pill label="Opened" value={step.openedCount.toLocaleString()} color={step.openedCount > 0 ? '#f59e0b' : undefined} />
+                          <Pill label="Open%" value={step.openRate > 0 ? `${step.openRate.toFixed(1)}%` : '—'} color={step.isBestOpen ? '#22c55e' : step.isWorstOpen ? '#ef4444' : '#f59e0b'} />
                           <Pill label="Replied" value={step.replyCount.toLocaleString()} color={step.replyCount > 0 ? '#22c55e' : undefined} />
+                          <Pill label="Clicked" value={step.clickCount.toLocaleString()} color={step.clickCount > 0 ? '#ec4899' : undefined} />
+                          <Pill label="Opps" value={step.opportunityCount.toLocaleString()} color={step.opportunityCount > 0 ? '#10b981' : undefined} />
                         </div>
                       </div>
                     );
@@ -161,14 +165,26 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                 </div>
 
                 {/* Insight */}
-                {steps.filter(s => s.sentCount > 10 && s.replyCount > 0).length > 0 && (
-                  <div className="px-3 py-2 rounded-md text-xs" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', color: '#a5b4fc' }}>
+                {steps.filter(s => s.sentCount > 10).length > 1 && (
+                  <div className="space-y-1">
                     {(() => {
-                      const withReplies = steps.filter(s => s.sentCount > 10);
-                      const best = [...withReplies].sort((a, b) => (b.replyCount / b.sentCount) - (a.replyCount / a.sentCount))[0];
-                      if (!best || best.replyCount === 0) return null;
-                      const rate = ((best.replyCount / best.sentCount) * 100).toFixed(2);
-                      return <><strong>Best reply rate:</strong> Step {best.stepNumber} ({rate}% — {best.replyCount} of {best.sentCount.toLocaleString()} sent)</>;
+                      const withVolume = steps.filter(s => s.sentCount > 10);
+                      const bestOpen = [...withVolume].sort((a, b) => b.openRate - a.openRate)[0];
+                      const bestReply = [...withVolume].sort((a, b) => (b.replyCount / b.sentCount) - (a.replyCount / a.sentCount))[0];
+                      return (
+                        <>
+                          {bestOpen && bestOpen.openRate > 0 && (
+                            <div className="px-3 py-2 rounded-md text-xs" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.12)', color: '#fbbf24' }}>
+                              <strong>Best open rate:</strong> Step {bestOpen.stepNumber} ({bestOpen.openRate.toFixed(1)}% — {bestOpen.openedCount.toLocaleString()} of {bestOpen.sentCount.toLocaleString()} sent)
+                            </div>
+                          )}
+                          {bestReply && bestReply.replyCount > 0 && (
+                            <div className="px-3 py-2 rounded-md text-xs" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', color: '#a5b4fc' }}>
+                              <strong>Best reply rate:</strong> Step {bestReply.stepNumber} ({((bestReply.replyCount / bestReply.sentCount) * 100).toFixed(2)}% — {bestReply.replyCount} of {bestReply.sentCount.toLocaleString()} sent)
+                            </div>
+                          )}
+                        </>
+                      );
                     })()}
                   </div>
                 )}

@@ -53,32 +53,36 @@ export interface DailyAnalytics {
   opportunities: number;
 }
 
-export interface Email {
-  id: string;
-  campaign_id: string;
-  step: string; // format: sequenceIndex_stepIndex_variantIndex
-  subject: string;
-  to_address_email_list: string;
-  lead?: string;
-  timestamp_created: string;
-  ue_type?: number;
-  eaccount?: string;
-  from_address_email?: string;
+// Raw response from /campaigns/analytics/steps
+export interface StepAnalyticsRaw {
+  step: string;      // 0-based step index
+  variant: string;   // 0-based variant index
+  sent: number;
+  opened: number;
+  unique_opened: number;
+  replies: number;
+  unique_replies: number;
+  replies_automatic: number;
+  unique_replies_automatic: number;
+  clicks: number;
+  unique_clicks: number;
+  opportunities: number;
+  unique_opportunities: number;
 }
 
 export interface StepAnalytics {
-  step: string;
-  stepNumber: number; // 1-based display number
+  stepIndex: number;   // 0-based from API
+  stepNumber: number;  // 1-based for display
+  variant: number;
   subject: string;
   sentCount: number;
   openedCount: number;
   openRate: number;
   replyCount: number;
   clickCount: number;
+  opportunityCount: number;
   isBestOpen: boolean;
   isWorstOpen: boolean;
-  isBestReply: boolean;
-  isWorstReply: boolean;
 }
 
 export interface CampaignWithAnalytics extends Campaign {

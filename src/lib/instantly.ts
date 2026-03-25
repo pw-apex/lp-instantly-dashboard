@@ -1,4 +1,4 @@
-import type { Campaign, CampaignAnalytics, DailyAnalytics, Email } from './types';
+import type { Campaign, CampaignAnalytics, DailyAnalytics, StepAnalyticsRaw } from './types';
 
 const BASE_URL = 'https://api.instantly.ai/api/v2';
 
@@ -88,43 +88,16 @@ export async function getDailyCampaignAnalytics(params: {
   return Array.isArray(data) ? data : data.items || [];
 }
 
-// Paginate emails for a campaign with a page cap to stay within Vercel timeout
-const MAX_EMAIL_PAGES = 25;
-
-async function paginateEmails(campaignId: string, emailType?: string): Promise<Email[]> {
-  const emails: Email[] = [];
-  let cursor: string | undefined;
-  let page = 0;
-
-  while (page < MAX_EMAIL_PAGES) {
-    const params: Record<string, string> = {
+// Get per-step analytics for a campaign — single API call, no pagination needed
+export async function getStepAnalytics(campaignId: string): Promise<StepAnalyticsRaw[]> {
+  const data = await apiFetch<StepAnalyticsRaw[]>(
+    '/campaigns/analytics/steps',
+    {
       campaign_id: campaignId,
-      limit: '100',
-    };
-    if (emailType) params.email_type = emailType;
-    if (cursor) params.starting_after = cursor;
-
-    const data = await apiFetch<{ items: Email[]; next_starting_after?: string }>(
-      '/emails',
-      params
-    );
-    emails.push(...(data.items || []));
-    if (!data.next_starting_after || (data.items || []).length === 0) break;
-    cursor = data.next_starting_after;
-    page++;
-  }
-
-  return emails;
-}
-
-// List sent emails for a campaign (ue_type 1)
-export async function listSentEmails(campaignId: string): Promise<Email[]> {
-  return paginateEmails(campaignId, 'sent');
-}
-
-// List received emails (replies) for a campaign (ue_type 2)
-export async function listReceivedEmails(campaignId: string): Promise<Email[]> {
-  return paginateEmails(campaignId, 'received');
+      include_opportunities_count: 'true',
+    }
+  );
+  return Array.isArray(data) ? data : [];
 }
 
 // Campaign detail type matching actual API shape
