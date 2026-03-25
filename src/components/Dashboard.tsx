@@ -88,20 +88,16 @@ export default function Dashboard() {
     return { ...c, analytics: a };
   });
 
-  // Lead inventory for active campaigns (lead counts come from analytics)
-  const leadInventory: LeadInventoryType[] = analytics
-    .filter((a) => {
-      const campaign = campaigns.find((c) => c.id === a.campaign_id);
-      return campaign?.status === 1 && (a.leads_count ?? 0) > 0;
-    })
-    .map((a) => {
-      const total = a.leads_count ?? 0;
-      // Use new_leads_contacted_count (unique leads), not contacted_count (total emails across all steps)
-      const contacted = Math.min(a.new_leads_contacted_count ?? a.contacted_count ?? 0, total);
+  // Lead inventory for active campaigns (from campaign list, not date-filtered analytics)
+  const leadInventory: LeadInventoryType[] = campaigns
+    .filter((c) => c.status === 1 && (c.leads_count ?? 0) > 0)
+    .map((c) => {
+      const total = c.leads_count ?? 0;
+      const contacted = Math.min(c.leads_contacted_count ?? 0, total);
       const remaining = total - contacted;
       return {
-        campaignId: a.campaign_id || '',
-        campaignName: a.campaign_name || '',
+        campaignId: c.id,
+        campaignName: c.name,
         totalLeads: total,
         contacted,
         remaining: Math.max(remaining, 0),
