@@ -47,9 +47,9 @@ export async function listCampaigns(): Promise<Campaign[]> {
   return campaigns;
 }
 
-// Get single campaign detail
-export async function getCampaign(id: string): Promise<Campaign> {
-  return apiFetch<Campaign>(`/campaigns/${id}`);
+// Get single campaign detail (includes sequences with step subjects)
+export async function getCampaign(id: string): Promise<CampaignDetail> {
+  return apiFetch<CampaignDetail>(`/campaigns/${id}`);
 }
 
 // Get campaign analytics (aggregate)
@@ -88,14 +88,19 @@ export async function getDailyCampaignAnalytics(params: {
   return Array.isArray(data) ? data : data.items || [];
 }
 
-// List emails for a campaign (paginated - for per-step aggregation)
+// List sent emails for a campaign (paginated - for per-step aggregation)
+// Caps at MAX_PAGES to stay within Vercel serverless timeout
+const MAX_EMAIL_PAGES = 20; // 2000 emails max
+
 export async function listCampaignEmails(campaignId: string): Promise<Email[]> {
   const emails: Email[] = [];
   let cursor: string | undefined;
+  let page = 0;
 
-  while (true) {
+  while (page < MAX_EMAIL_PAGES) {
     const params: Record<string, string> = {
       campaign_id: campaignId,
+      email_type: 'sent',
       limit: '100',
     };
     if (cursor) params.starting_after = cursor;
@@ -107,7 +112,26 @@ export async function listCampaignEmails(campaignId: string): Promise<Email[]> {
     emails.push(...(data.items || []));
     if (!data.next_starting_after || (data.items || []).length === 0) break;
     cursor = data.next_starting_after;
+    page++;
   }
 
   return emails;
+}
+
+// Campaign detail type matching actual API shape
+export interface CampaignDetail {
+  id: string;
+  name: string;
+  status: number;
+  open_tracking: boolean;
+  link_tracking: boolean;
+  sequences?: Array<{
+    steps: Array<{
+      type: string;
+      variants: Array<{
+        subject: string;
+        body: string;
+      }>;
+    }>;
+  }>;
 }

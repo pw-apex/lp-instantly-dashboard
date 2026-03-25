@@ -37,9 +37,15 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
       setLoading(true);
       try {
         const res = await fetch(`/api/campaigns/${campaign.id}/emails`);
+        if (!res.ok) {
+          console.error('Step analytics API error:', res.status);
+          setSteps([]);
+          return;
+        }
         const data = await res.json();
         setSteps(data.steps || []);
-      } catch {
+      } catch (err) {
+        console.error('Step analytics fetch error:', err);
         setSteps([]);
       } finally {
         setLoading(false);
@@ -103,7 +109,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
               </div>
             ) : steps && steps.length > 0 ? (
               <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-300">Per-Step Performance</h4>
+                <h4 className="text-sm font-semibold text-slate-300">Per-Step Breakdown</h4>
                 <StepChart steps={steps} />
                 <table className="w-full text-sm">
                   <thead>
@@ -111,35 +117,29 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                       <th className="text-left py-2 px-3">Step</th>
                       <th className="text-left py-2 px-3">Subject</th>
                       <th className="text-right py-2 px-3">Sent</th>
-                      <th className="text-right py-2 px-3">Opened</th>
-                      <th className="text-right py-2 px-3">Open %</th>
-                      <th className="text-right py-2 px-3">Replies</th>
-                      <th className="text-right py-2 px-3">Clicks</th>
-                      <th className="text-right py-2 px-3">Insight</th>
+                      <th className="text-left py-2 px-3 w-48">Volume</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {steps.map((step) => (
-                      <tr key={step.step} className="border-t border-white/5">
-                        <td className="py-2 px-3 mono text-slate-300">Step {step.stepNumber}</td>
-                        <td className="py-2 px-3 text-slate-400 truncate max-w-[200px]">{step.subject}</td>
-                        <td className="py-2 px-3 mono text-right">{step.sentCount.toLocaleString()}</td>
-                        <td className="py-2 px-3 mono text-right">{step.openedCount.toLocaleString()}</td>
-                        <td className="py-2 px-3 mono text-right">
-                          <span className={step.isBestOpen ? 'text-green' : step.isWorstOpen ? 'text-red' : 'text-amber'}>
-                            {step.openRate.toFixed(1)}%
-                          </span>
-                        </td>
-                        <td className="py-2 px-3 mono text-right text-green">{step.replyCount}</td>
-                        <td className="py-2 px-3 mono text-right text-pink">{step.clickCount}</td>
-                        <td className="py-2 px-3 text-right text-xs">
-                          {step.isBestOpen && <span className="text-green">Best Open Rate</span>}
-                          {step.isWorstOpen && <span className="text-red">Worst Open Rate</span>}
-                          {step.isBestReply && !step.isBestOpen && <span className="text-green">Best Reply Rate</span>}
-                          {step.isWorstReply && !step.isWorstOpen && <span className="text-red">Worst Reply Rate</span>}
-                        </td>
-                      </tr>
-                    ))}
+                    {steps.map((step) => {
+                      const maxSent = Math.max(...steps.map(s => s.sentCount));
+                      const pct = maxSent > 0 ? (step.sentCount / maxSent) * 100 : 0;
+                      return (
+                        <tr key={step.step} className="border-t border-white/5">
+                          <td className="py-2 px-3 mono text-slate-300">Step {step.stepNumber}</td>
+                          <td className="py-2 px-3 text-slate-400 truncate max-w-[300px]">{step.subject}</td>
+                          <td className="py-2 px-3 mono text-right">{step.sentCount.toLocaleString()}</td>
+                          <td className="py-2 px-3">
+                            <div className="h-2 bg-navy-700 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full"
+                                style={{ width: `${pct}%`, backgroundColor: '#6366f1' }}
+                              />
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

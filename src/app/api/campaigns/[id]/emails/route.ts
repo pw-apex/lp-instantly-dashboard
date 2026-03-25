@@ -3,6 +3,7 @@ import { listCampaignEmails, getCampaign } from '@/lib/instantly';
 import { aggregateStepAnalytics } from '@/lib/aggregation';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30; // Allow up to 30s for pagination
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +15,10 @@ export async function GET(
     // Fetch emails and campaign detail in parallel
     const [emails, campaignDetail] = await Promise.all([
       listCampaignEmails(id),
-      getCampaign(id).catch(() => undefined),
+      getCampaign(id).catch((err) => {
+        console.error('Error fetching campaign detail:', err);
+        return undefined;
+      }),
     ]);
 
     const steps = aggregateStepAnalytics(emails, campaignDetail);

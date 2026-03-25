@@ -1,6 +1,7 @@
 import type { Email, StepAnalytics } from './types';
+import type { CampaignDetail } from './instantly';
 
-export function aggregateStepAnalytics(emails: Email[], campaignDetail?: { sequences?: Array<{ steps: Array<{ subject: string }> }> }): StepAnalytics[] {
+export function aggregateStepAnalytics(emails: Email[], campaignDetail?: CampaignDetail): StepAnalytics[] {
   const stepMap = new Map<string, {
     step: string;
     subject: string;
@@ -25,11 +26,13 @@ export function aggregateStepAnalytics(emails: Email[], campaignDetail?: { seque
     const parts = s.step.split('_').map(Number);
     const seqIdx = parts[0] || 0;
     const stepIdx = parts[1] || 0;
+    const variantIdx = parts[2] || 0;
 
-    // Try to get subject from campaign detail sequences
+    // Get subject from campaign detail: sequences[seqIdx].steps[stepIdx].variants[variantIdx].subject
     let subject = s.subject;
-    if (campaignDetail?.sequences?.[seqIdx]?.steps?.[stepIdx]?.subject) {
-      subject = campaignDetail.sequences[seqIdx].steps[stepIdx].subject;
+    const variant = campaignDetail?.sequences?.[seqIdx]?.steps?.[stepIdx]?.variants?.[variantIdx];
+    if (variant?.subject) {
+      subject = variant.subject;
     }
 
     return {
@@ -50,25 +53,6 @@ export function aggregateStepAnalytics(emails: Email[], campaignDetail?: { seque
 
   // Sort by step number
   steps.sort((a, b) => a.stepNumber - b.stepNumber);
-
-  // Mark best/worst
-  if (steps.length > 1) {
-    const withSent = steps.filter(s => s.sentCount > 0);
-    if (withSent.length > 1) {
-      const bestOpen = withSent.reduce((a, b) => a.openRate > b.openRate ? a : b);
-      const worstOpen = withSent.reduce((a, b) => a.openRate < b.openRate ? a : b);
-      bestOpen.isBestOpen = true;
-      worstOpen.isWorstOpen = true;
-
-      const replyRates = withSent.map(s => s.sentCount > 0 ? s.replyCount / s.sentCount : 0);
-      const maxReply = Math.max(...replyRates);
-      const minReply = Math.min(...replyRates);
-      const bestReplyIdx = replyRates.indexOf(maxReply);
-      const worstReplyIdx = replyRates.indexOf(minReply);
-      if (bestReplyIdx >= 0) withSent[bestReplyIdx].isBestReply = true;
-      if (worstReplyIdx >= 0) withSent[worstReplyIdx].isWorstReply = true;
-    }
-  }
 
   return steps;
 }
