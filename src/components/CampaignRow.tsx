@@ -5,6 +5,15 @@ import StatusBadge from './ui/StatusBadge';
 import StepChart from './charts/StepChart';
 import type { CampaignWithAnalytics, StepAnalytics } from '@/lib/types';
 
+function Pill({ label, value, color }: { label: string; value: string; color?: string }) {
+  return (
+    <div className="flex flex-col items-center px-3 py-1 rounded-md" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', minWidth: 56 }}>
+      <span className="text-[8px] text-slate-600 uppercase tracking-wider">{label}</span>
+      <span className="mono text-sm font-bold" style={{ color: color || '#e2e8f0' }}>{value}</span>
+    </div>
+  );
+}
+
 interface CampaignRowProps {
   campaign: CampaignWithAnalytics;
 }
@@ -108,40 +117,61 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                 Loading per-step analytics...
               </div>
             ) : steps && steps.length > 0 ? (
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-300">Per-Step Breakdown</h4>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                  <span>Step Analytics — {steps.length} steps</span>
+                  {!campaign.open_tracking && <span className="text-red normal-case">open tracking disabled</span>}
+                  {campaign.open_tracking && !campaign.link_tracking && <span className="text-slate-600 normal-case">link tracking off</span>}
+                </div>
+
+                {/* Horizontal bar chart for sent volume per step */}
                 <StepChart steps={steps} />
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-slate-500 text-xs uppercase">
-                      <th className="text-left py-2 px-3">Step</th>
-                      <th className="text-left py-2 px-3">Subject</th>
-                      <th className="text-right py-2 px-3">Sent</th>
-                      <th className="text-left py-2 px-3 w-48">Volume</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {steps.map((step) => {
-                      const maxSent = Math.max(...steps.map(s => s.sentCount));
-                      const pct = maxSent > 0 ? (step.sentCount / maxSent) * 100 : 0;
-                      return (
-                        <tr key={step.step} className="border-t border-white/5">
-                          <td className="py-2 px-3 mono text-slate-300">Step {step.stepNumber}</td>
-                          <td className="py-2 px-3 text-slate-400 truncate max-w-[300px]">{step.subject}</td>
-                          <td className="py-2 px-3 mono text-right">{step.sentCount.toLocaleString()}</td>
-                          <td className="py-2 px-3">
-                            <div className="h-2 bg-navy-700 rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full"
-                                style={{ width: `${pct}%`, backgroundColor: '#6366f1' }}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+
+                {/* Step rows */}
+                <div className="space-y-1.5">
+                  {steps.map((step, i) => {
+                    const isInitial = i === 0;
+                    return (
+                      <div key={step.step} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.02] border border-white/[0.04]">
+                        <span
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                          style={{
+                            background: isInitial ? 'rgba(34,211,238,0.15)' : 'rgba(99,102,241,0.1)',
+                            color: isInitial ? '#22d3ee' : '#818cf8',
+                          }}
+                        >
+                          {step.stepNumber}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="font-semibold" style={{ color: isInitial ? '#22d3ee' : '#818cf8' }}>
+                              {isInitial ? 'INITIAL' : `FU${i}`}
+                            </span>
+                            <span className="text-slate-600">·</span>
+                            <span className="text-slate-400 truncate">{step.subject}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <Pill label="Sent" value={step.sentCount.toLocaleString()} />
+                          <Pill label="Replied" value={step.replyCount.toLocaleString()} color={step.replyCount > 0 ? '#22c55e' : undefined} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Insight */}
+                {steps.filter(s => s.sentCount > 10 && s.replyCount > 0).length > 0 && (
+                  <div className="px-3 py-2 rounded-md text-xs" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.12)', color: '#a5b4fc' }}>
+                    {(() => {
+                      const withReplies = steps.filter(s => s.sentCount > 10);
+                      const best = [...withReplies].sort((a, b) => (b.replyCount / b.sentCount) - (a.replyCount / a.sentCount))[0];
+                      if (!best || best.replyCount === 0) return null;
+                      const rate = ((best.replyCount / best.sentCount) * 100).toFixed(2);
+                      return <><strong>Best reply rate:</strong> Step {best.stepNumber} ({rate}% — {best.replyCount} of {best.sentCount.toLocaleString()} sent)</>;
+                    })()}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-slate-500 text-sm py-4">No step data available for this campaign.</div>

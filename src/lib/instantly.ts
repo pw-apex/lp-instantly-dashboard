@@ -88,11 +88,10 @@ export async function getDailyCampaignAnalytics(params: {
   return Array.isArray(data) ? data : data.items || [];
 }
 
-// List sent emails for a campaign (paginated - for per-step aggregation)
-// Caps at MAX_PAGES to stay within Vercel serverless timeout
-const MAX_EMAIL_PAGES = 20; // 2000 emails max
+// Paginate emails for a campaign with a page cap to stay within Vercel timeout
+const MAX_EMAIL_PAGES = 25;
 
-export async function listCampaignEmails(campaignId: string): Promise<Email[]> {
+async function paginateEmails(campaignId: string, emailType?: string): Promise<Email[]> {
   const emails: Email[] = [];
   let cursor: string | undefined;
   let page = 0;
@@ -100,9 +99,9 @@ export async function listCampaignEmails(campaignId: string): Promise<Email[]> {
   while (page < MAX_EMAIL_PAGES) {
     const params: Record<string, string> = {
       campaign_id: campaignId,
-      email_type: 'sent',
       limit: '100',
     };
+    if (emailType) params.email_type = emailType;
     if (cursor) params.starting_after = cursor;
 
     const data = await apiFetch<{ items: Email[]; next_starting_after?: string }>(
@@ -116,6 +115,16 @@ export async function listCampaignEmails(campaignId: string): Promise<Email[]> {
   }
 
   return emails;
+}
+
+// List sent emails for a campaign (ue_type 1)
+export async function listSentEmails(campaignId: string): Promise<Email[]> {
+  return paginateEmails(campaignId, 'sent');
+}
+
+// List received emails (replies) for a campaign (ue_type 2)
+export async function listReceivedEmails(campaignId: string): Promise<Email[]> {
+  return paginateEmails(campaignId, 'received');
 }
 
 // Campaign detail type matching actual API shape

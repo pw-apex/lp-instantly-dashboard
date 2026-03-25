@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { listCampaignEmails, getCampaign } from '@/lib/instantly';
+import { listSentEmails, listReceivedEmails, getCampaign } from '@/lib/instantly';
 import { aggregateStepAnalytics } from '@/lib/aggregation';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30; // Allow up to 30s for pagination
+export const maxDuration = 60; // Allow time for pagination
 
 export async function GET(
   request: NextRequest,
@@ -12,20 +12,22 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Fetch emails and campaign detail in parallel
-    const [emails, campaignDetail] = await Promise.all([
-      listCampaignEmails(id),
+    // Fetch sent emails, received emails (replies), and campaign detail in parallel
+    const [sentEmails, receivedEmails, campaignDetail] = await Promise.all([
+      listSentEmails(id),
+      listReceivedEmails(id),
       getCampaign(id).catch((err) => {
         console.error('Error fetching campaign detail:', err);
         return undefined;
       }),
     ]);
 
-    const steps = aggregateStepAnalytics(emails, campaignDetail);
+    const steps = aggregateStepAnalytics(sentEmails, receivedEmails, campaignDetail);
 
     return NextResponse.json({
       campaignId: id,
-      totalEmails: emails.length,
+      totalSentEmails: sentEmails.length,
+      totalReceivedEmails: receivedEmails.length,
       steps,
     });
   } catch (error) {

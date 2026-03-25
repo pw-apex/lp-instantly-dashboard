@@ -16,27 +16,38 @@ interface StepChartProps {
 }
 
 export default function StepChart({ steps }: StepChartProps) {
-  const chartData = steps.map((s) => ({
-    name: `Step ${s.stepNumber}`,
-    Sent: s.sentCount,
-  }));
+  const chartData = steps
+    .filter(s => s.sentCount > 0)
+    .map((s) => ({
+      name: `Step ${s.stepNumber}`,
+      Sent: s.sentCount,
+      subject: s.subject,
+      replies: s.replyCount,
+    }));
+
+  if (chartData.length === 0) return null;
 
   return (
-    <div className="h-48">
+    <div style={{ height: Math.max(80, chartData.length * 28 + 20) }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} layout="vertical" barSize={20}>
-          <CartesianGrid strokeDasharray="3 3" />
+        <BarChart data={chartData} layout="vertical" barSize={14}>
+          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
           <XAxis type="number" tick={{ fontSize: 10 }} />
-          <YAxis type="category" dataKey="name" width={60} tick={{ fontSize: 11 }} />
+          <YAxis type="category" dataKey="name" width={50} tick={{ fontSize: 10 }} />
           <Tooltip
             contentStyle={{
-              background: '#1a1a35',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: '#1a1a2e',
+              border: '1px solid rgba(255,255,255,0.08)',
               borderRadius: '8px',
-              fontSize: '12px',
+              fontSize: '11px',
+            }}
+            formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+            labelFormatter={(label) => {
+              const step = chartData.find(d => d.name === label);
+              return step?.subject || label;
             }}
           />
-          <Bar dataKey="Sent" fill="#6366f1" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="Sent" fill="#f59e0b" radius={[0, 4, 4, 0]} background={{ fill: 'rgba(255,255,255,0.03)' }} />
         </BarChart>
       </ResponsiveContainer>
     </div>
