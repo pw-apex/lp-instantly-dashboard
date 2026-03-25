@@ -19,8 +19,8 @@ interface VolumeChartProps {
 export default function VolumeChart({ data }: VolumeChartProps) {
   const chartData = data.map((d) => ({
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    'New Contacts': d.new_leads_contacted_count,
-    'Follow-ups': d.emails_sent_count - d.new_leads_contacted_count,
+    'New Contacts': d.new_leads_contacted,
+    'Follow-ups': d.sent - d.new_leads_contacted,
   }));
 
   return (

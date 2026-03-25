@@ -5,9 +5,6 @@ export function aggregateStepAnalytics(emails: Email[], campaignDetail?: { seque
     step: string;
     subject: string;
     sent: number;
-    opened: number;
-    replied: number;
-    clicked: number;
   }>();
 
   for (const email of emails) {
@@ -17,16 +14,10 @@ export function aggregateStepAnalytics(emails: Email[], campaignDetail?: { seque
         step: key,
         subject: email.subject || '',
         sent: 0,
-        opened: 0,
-        replied: 0,
-        clicked: 0,
       });
     }
     const agg = stepMap.get(key)!;
     agg.sent++;
-    if (email.is_opened) agg.opened++;
-    if (email.is_replied) agg.replied++;
-    if (email.is_clicked) agg.clicked++;
   }
 
   // Parse step field and resolve subjects from campaign detail
@@ -41,17 +32,15 @@ export function aggregateStepAnalytics(emails: Email[], campaignDetail?: { seque
       subject = campaignDetail.sequences[seqIdx].steps[stepIdx].subject;
     }
 
-    const openRate = s.sent > 0 ? (s.opened / s.sent) * 100 : 0;
-
     return {
       step: s.step,
       stepNumber: stepIdx + 1, // 1-based
       subject: subject || `Step ${stepIdx + 1}`,
       sentCount: s.sent,
-      openedCount: s.opened,
-      openRate,
-      replyCount: s.replied,
-      clickCount: s.clicked,
+      openedCount: 0,
+      openRate: 0,
+      replyCount: 0,
+      clickCount: 0,
       isBestOpen: false,
       isWorstOpen: false,
       isBestReply: false,

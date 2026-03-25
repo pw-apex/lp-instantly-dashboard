@@ -77,7 +77,7 @@ export default function Dashboard() {
   const totalReplies = analytics.reduce((sum, a) => sum + (a.reply_count_unique || a.reply_count || 0), 0);
   const totalClicks = analytics.reduce((sum, a) => sum + (a.link_click_count || 0), 0);
   const totalBounces = analytics.reduce((sum, a) => sum + (a.bounced_count || 0), 0);
-  const totalOpps = analytics.reduce((sum, a) => sum + (a.opportunity_count || 0), 0);
+  const totalOpps = analytics.reduce((sum, a) => sum + (a.total_opportunities || 0), 0);
 
   const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '0.0';
   const replyRate = totalNew > 0 ? ((totalReplies / totalNew) * 100).toFixed(1) : '0.0';
@@ -88,19 +88,22 @@ export default function Dashboard() {
     return { ...c, analytics: a };
   });
 
-  // Lead inventory for active campaigns
-  const leadInventory: LeadInventoryType[] = campaigns
-    .filter((c) => c.status === 1 && (c.leads_count ?? 0) > 0)
-    .map((c) => {
-      const total = c.leads_count ?? 0;
-      const contacted = c.leads_contacted_count ?? 0;
+  // Lead inventory for active campaigns (lead counts come from analytics)
+  const leadInventory: LeadInventoryType[] = analytics
+    .filter((a) => {
+      const campaign = campaigns.find((c) => c.id === a.campaign_id);
+      return campaign?.status === 1 && (a.leads_count ?? 0) > 0;
+    })
+    .map((a) => {
+      const total = a.leads_count ?? 0;
+      const contacted = a.contacted_count ?? 0;
       const remaining = total - contacted;
       return {
-        campaignId: c.id,
-        campaignName: c.name,
+        campaignId: a.campaign_id || '',
+        campaignName: a.campaign_name || '',
         totalLeads: total,
         contacted,
-        remaining,
+        remaining: Math.max(remaining, 0),
         percentContacted: total > 0 ? (contacted / total) * 100 : 0,
         isLow: remaining < LEAD_ALERT_THRESHOLD,
       };

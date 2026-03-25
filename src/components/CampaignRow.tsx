@@ -21,7 +21,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
   const replies = a?.reply_count_unique ?? a?.reply_count ?? 0;
   const clicks = a?.link_click_count ?? 0;
   const bounces = a?.bounced_count ?? 0;
-  const opportunities = a?.opportunity_count ?? 0;
+  const opportunities = a?.total_opportunities ?? 0;
 
   const openRate = campaign.open_tracking && sent > 0 ? ((opens / sent) * 100).toFixed(1) : null;
   const replyRate = newContacts > 0 ? ((replies / newContacts) * 100).toFixed(1) : '0.0';

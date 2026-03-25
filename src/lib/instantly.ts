@@ -17,7 +17,7 @@ async function apiFetch<T>(path: string, params?: Record<string, string>): Promi
   }
   const res = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${getApiKey()}` },
-    next: { revalidate: 300 }, // cache 5 min
+    cache: 'no-store',
   });
   if (!res.ok) {
     const text = await res.text();

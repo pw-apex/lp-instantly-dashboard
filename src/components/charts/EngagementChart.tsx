@@ -19,8 +19,8 @@ interface EngagementChartProps {
 export default function EngagementChart({ data }: EngagementChartProps) {
   const chartData = data.map((d) => ({
     date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    'Unique Opens': d.open_count_unique,
-    Replies: d.reply_count,
+    'Unique Opens': d.unique_opened,
+    Replies: d.replies,
   }));
 
   return (
