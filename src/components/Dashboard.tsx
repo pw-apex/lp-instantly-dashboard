@@ -96,7 +96,8 @@ export default function Dashboard() {
     })
     .map((a) => {
       const total = a.leads_count ?? 0;
-      const contacted = a.contacted_count ?? 0;
+      // Use new_leads_contacted_count (unique leads), not contacted_count (total emails across all steps)
+      const contacted = Math.min(a.new_leads_contacted_count ?? a.contacted_count ?? 0, total);
       const remaining = total - contacted;
       return {
         campaignId: a.campaign_id || '',
@@ -104,7 +105,7 @@ export default function Dashboard() {
         totalLeads: total,
         contacted,
         remaining: Math.max(remaining, 0),
-        percentContacted: total > 0 ? (contacted / total) * 100 : 0,
+        percentContacted: total > 0 ? Math.min((contacted / total) * 100, 100) : 0,
         isLow: remaining < LEAD_ALERT_THRESHOLD,
       };
     });
