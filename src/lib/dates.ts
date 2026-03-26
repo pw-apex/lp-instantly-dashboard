@@ -14,9 +14,9 @@ export function getDateRange(preset: DateRange, customStart?: string, customEnd?
       start.setDate(start.getDate() - 7);
       return { startDate: formatDate(start), endDate, preset };
     }
-    case 'last14': {
+    case 'last30': {
       const start = new Date(now);
-      start.setDate(start.getDate() - 14);
+      start.setDate(start.getDate() - 30);
       return { startDate: formatDate(start), endDate, preset };
     }
     case 'mtd': {
@@ -36,7 +36,7 @@ export function getDateRange(preset: DateRange, customStart?: string, customEnd?
 export function getPresetLabel(preset: DateRange): string {
   switch (preset) {
     case 'last7': return 'Last 7 Days';
-    case 'last14': return 'Last 14 Days';
+    case 'last30': return 'Last 30 Days';
     case 'mtd': return 'Month to Date';
     case 'custom': return 'Custom Range';
   }

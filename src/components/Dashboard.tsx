@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DateRangeFilter from './ui/DateRangeFilter';
 import KpiCard from './ui/KpiCard';
+import ThemeToggle from './ui/ThemeToggle';
 import VolumeChart from './charts/VolumeChart';
 import EngagementChart from './charts/EngagementChart';
 import CampaignTable from './CampaignTable';
@@ -81,6 +82,7 @@ export default function Dashboard() {
 
   const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '0.0';
   const replyRate = totalNew > 0 ? ((totalReplies / totalNew) * 100).toFixed(1) : '0.0';
+  const bounceRate = totalSent > 0 ? ((totalBounces / totalSent) * 100).toFixed(1) : '0.0';
 
   // Merge campaigns with analytics
   const campaignsWithAnalytics: CampaignWithAnalytics[] = campaigns.map((c) => {
@@ -88,23 +90,27 @@ export default function Dashboard() {
     return { ...c, analytics: a };
   });
 
-  // Lead inventory for active campaigns (from campaign list, not date-filtered analytics)
+  // Lead inventory for active campaigns
+  // leads_count from analytics is always the total pool (not date-filtered)
+  // new_leads_contacted_count is date-filtered but accurate for MTD default
   const leadInventory: LeadInventoryType[] = campaigns
-    .filter((c) => c.status === 1 && (c.leads_count ?? 0) > 0)
+    .filter((c) => c.status === 1)
     .map((c) => {
-      const total = c.leads_count ?? 0;
-      const contacted = Math.min(c.leads_contacted_count ?? 0, total);
-      const remaining = total - contacted;
+      const a = analytics.find((an) => an.campaign_id === c.id);
+      const total = a?.leads_count ?? 0;
+      const contacted = a?.new_leads_contacted_count ?? 0;
+      const remaining = Math.max(total - contacted, 0);
       return {
         campaignId: c.id,
         campaignName: c.name,
         totalLeads: total,
-        contacted,
-        remaining: Math.max(remaining, 0),
+        contacted: Math.min(contacted, total),
+        remaining,
         percentContacted: total > 0 ? Math.min((contacted / total) * 100, 100) : 0,
         isLow: remaining < LEAD_ALERT_THRESHOLD,
       };
-    });
+    })
+    .filter((item) => item.totalLeads > 0);
 
   const handleDateChange = (preset: DateRange, start?: string, end?: string) => {
     setDatePreset(preset);
@@ -114,14 +120,14 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-bg">
         <div className="card p-8 max-w-md text-center">
           <div className="text-red text-4xl mb-4">!</div>
-          <h2 className="text-lg font-semibold text-slate-200 mb-2">Error Loading Dashboard</h2>
-          <p className="text-sm text-slate-400 mb-4">{error}</p>
+          <h2 className="text-lg font-semibold text-text-heading mb-2">Error Loading Dashboard</h2>
+          <p className="text-sm text-text-body mb-4">{error}</p>
           <button
             onClick={fetchData}
-            className="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-primary/80 transition-colors"
+            className="px-4 py-2 bg-text-heading rounded-lg text-sm font-medium text-bg hover:opacity-80 transition-opacity"
           >
             Retry
           </button>
@@ -131,14 +137,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="border-b border-white/5 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-white">Instantly Analytics</h1>
-            <p className="text-xs text-slate-500">Luxury Presence Outbound Dashboard</p>
-          </div>
+      <header className="sticky top-0 z-10 h-14 bg-surface border-b border-border-default px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-text-heading">Instantly Analytics</span>
+          <span className="text-xs text-text-body border-l border-border-default pl-3">Luxury Presence</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
           <DateRangeFilter
             value={datePreset}
             customStart={customStart}
@@ -148,41 +155,47 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <main className="max-w-[1600px] mx-auto p-6 space-y-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="flex items-center gap-3 text-slate-400">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-3 text-text-muted">
+              <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--spinner-track)', borderTopColor: 'var(--spinner-fill)' }} />
               Loading analytics...
             </div>
           </div>
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-              <KpiCard label="Emails Sent" value={totalSent} color="#6366f1" />
-              <KpiCard label="New Contacts" value={totalNew} color="#22d3ee" />
-              <KpiCard label="Follow-ups" value={totalFollowups} color="#a78bfa" />
-              <KpiCard label="Open Rate" value={openRate} color="#f59e0b" suffix="%" />
-              <KpiCard label="Reply Rate" value={replyRate} color="#22c55e" suffix="%" />
-              <KpiCard label="Clicks" value={totalClicks} color="#f472b6" />
-              <KpiCard label="Bounces" value={totalBounces} color="#ef4444" />
-              <KpiCard label="Opportunities" value={totalOpps} color="#10b981" />
-            </div>
+            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <KpiCard
+                label="Emails Sent"
+                value={totalSent}
+                subValues={[
+                  { label: 'New Contacts', value: totalNew },
+                  { label: 'Follow-ups', value: totalFollowups },
+                ]}
+              />
+              <KpiCard
+                label="Open Rate"
+                value={`${openRate}%`}
+                tooltip="Calculated only for campaigns with open tracking enabled. Campaigns with tracking disabled are excluded."
+              />
+              <KpiCard label="Reply Rate" value={`${replyRate}%`} />
+              <KpiCard label="Bounce Rate" value={`${bounceRate}%`} />
+              <KpiCard label="Opportunities" value={totalOpps} />
+            </section>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <VolumeChart data={dailyData} />
               <EngagementChart data={dailyData} />
-            </div>
+            </section>
 
             {/* Campaign Table */}
             <CampaignTable campaigns={campaignsWithAnalytics} />
 
             {/* Lead Inventory */}
-            {leadInventory.length > 0 && (
-              <LeadInventory inventory={leadInventory} threshold={LEAD_ALERT_THRESHOLD} />
-            )}
+            <LeadInventory inventory={leadInventory} threshold={LEAD_ALERT_THRESHOLD} />
           </>
         )}
       </main>
