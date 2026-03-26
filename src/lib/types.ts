@@ -4,8 +4,6 @@ export interface Campaign {
   status: number; // 0=draft, 1=active, 2=paused, 3=completed
   open_tracking: boolean;
   link_tracking: boolean;
-  leads_count?: number;
-  leads_contacted_count?: number;
   sequences?: Sequence[];
 }
 
