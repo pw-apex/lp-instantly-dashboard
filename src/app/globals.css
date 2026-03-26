@@ -1,6 +1,104 @@
 @import "tailwindcss";
 
+/* ── Light Mode (default) ── */
+:root {
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-elevated: #f4f4f5;
+  --border-default: #e4e4e7;
+  --text-heading: #09090b;
+  --text-body: #52525b;
+  --text-muted: #a1a1aa;
+  --text-faint: #71717a;
+  --hover: #f4f4f5;
+  --chart-primary: #52525b;
+  --chart-secondary: #d4d4d8;
+  --chart-tertiary: #a1a1aa;
+  --chart-best: #09090b;
+  --chart-worst: #a1a1aa;
+  --chart-bar-bg: #f4f4f5;
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #e4e4e7;
+  --tooltip-text: #09090b;
+  --engagement-line-1: #d4d4d8;
+  --engagement-line-2: #09090b;
+  --engagement-fill-1-start: rgba(212, 212, 216, 0.2);
+  --engagement-fill-2-start: rgba(9, 9, 11, 0.1);
+  --spinner-track: #d4d4d8;
+  --spinner-fill: #52525b;
+  --scrollbar-thumb: #d4d4d8;
+  --scrollbar-hover: #a1a1aa;
+  --recharts-grid: #e4e4e7;
+  --recharts-text: #a1a1aa;
+  --badge-active-bg: #dcfce7;
+  --badge-active-text: #166534;
+  --badge-paused-bg: #fef9c3;
+  --badge-paused-text: #854d0e;
+  --badge-completed-bg: #f3f4f6;
+  --badge-completed-text: #4b5563;
+  --badge-draft-bg: #dbeafe;
+  --badge-draft-text: #1e40af;
+  --badge-best-bg: #dcfce7;
+  --badge-best-text: #166534;
+  --badge-worst-bg: #fee2e2;
+  --badge-worst-text: #991b1b;
+}
+
+/* ── Dark Mode ── */
+html.dark {
+  --bg: #09090b;
+  --surface: #18181b;
+  --surface-elevated: #27272a;
+  --border-default: #27272a;
+  --text-heading: #fafafa;
+  --text-body: #a1a1aa;
+  --text-muted: #71717a;
+  --text-faint: #52525b;
+  --hover: #27272a;
+  --chart-primary: #a1a1aa;
+  --chart-secondary: #52525b;
+  --chart-tertiary: #71717a;
+  --chart-best: #fafafa;
+  --chart-worst: #52525b;
+  --chart-bar-bg: #09090b;
+  --tooltip-bg: #18181b;
+  --tooltip-border: #27272a;
+  --tooltip-text: #fafafa;
+  --engagement-line-1: #a1a1aa;
+  --engagement-line-2: #fafafa;
+  --engagement-fill-1-start: rgba(161, 161, 170, 0.15);
+  --engagement-fill-2-start: rgba(250, 250, 250, 0.08);
+  --spinner-track: #27272a;
+  --spinner-fill: #a1a1aa;
+  --scrollbar-thumb: #27272a;
+  --scrollbar-hover: #3f3f46;
+  --recharts-grid: #27272a;
+  --recharts-text: #71717a;
+  --badge-active-bg: rgba(34, 197, 94, 0.1);
+  --badge-active-text: #22c55e;
+  --badge-paused-bg: rgba(234, 179, 8, 0.1);
+  --badge-paused-text: #eab308;
+  --badge-completed-bg: rgba(161, 161, 170, 0.1);
+  --badge-completed-text: #a1a1aa;
+  --badge-draft-bg: rgba(59, 130, 246, 0.1);
+  --badge-draft-text: #3b82f6;
+  --badge-best-bg: rgba(34, 197, 94, 0.1);
+  --badge-best-text: #22c55e;
+  --badge-worst-bg: rgba(239, 68, 68, 0.1);
+  --badge-worst-text: #ef4444;
+}
+
+/* ── Tailwind v4 Theme Tokens ── */
 @theme {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border-default: var(--border-default);
+  --color-text-heading: var(--text-heading);
+  --color-text-body: var(--text-body);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-hover: var(--hover);
   --color-green: #22c55e;
   --color-red: #ef4444;
   --color-yellow: #eab308;
@@ -9,22 +107,23 @@
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
+/* ── Global Styles ── */
 body {
-  background: #fafafa;
-  color: #09090b;
+  background: var(--bg);
+  color: var(--text-heading);
   min-height: 100vh;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 
 .card {
-  background: #ffffff;
-  border: 1px solid #e4e4e7;
+  background: var(--surface);
+  border: 1px solid var(--border-default);
   border-radius: 0.5rem;
 }
 
 .card-hover:hover {
-  border-color: #a1a1aa;
+  border-color: var(--text-muted);
 }
 
 .mono {
@@ -33,11 +132,11 @@ body {
 
 /* Recharts overrides */
 .recharts-cartesian-grid line {
-  stroke: #e4e4e7 !important;
+  stroke: var(--recharts-grid) !important;
 }
 
 .recharts-text {
-  fill: #a1a1aa !important;
+  fill: var(--recharts-text) !important;
   font-size: 11px !important;
 }
 
@@ -51,10 +150,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d4d4d8;
+  background: var(--scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a1a1aa;
+  background: var(--scrollbar-hover);
 }

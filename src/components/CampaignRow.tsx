@@ -55,12 +55,12 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
     <>
       <tr
         onClick={toggleExpand}
-        className="hover:bg-[#f4f4f5] cursor-pointer transition-colors group"
+        className="hover:bg-hover cursor-pointer transition-colors group"
       >
         <td className="py-4 px-6">
           <div className="flex items-center gap-2">
             <svg
-              className={`w-3 h-3 text-[#a1a1aa] transition-transform ${expanded ? 'rotate-90' : ''}`}
+              className={`w-3 h-3 text-text-muted transition-transform ${expanded ? 'rotate-90' : ''}`}
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -70,7 +70,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                 clipRule="evenodd"
               />
             </svg>
-            <span className="text-sm font-medium text-[#09090b] truncate max-w-xs">{campaign.name}</span>
+            <span className="text-sm font-medium text-text-heading truncate max-w-xs">{campaign.name}</span>
           </div>
         </td>
         <td className="py-4 px-4"><StatusBadge status={campaign.status} /></td>
@@ -81,7 +81,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
           {openRate !== null ? (
             <span>{openRate}%</span>
           ) : (
-            <span className="text-[#a1a1aa]">off</span>
+            <span className="text-text-muted">off</span>
           )}
         </td>
         <td className="py-4 px-4 mono text-sm text-right">{clicks.toLocaleString()}</td>
@@ -89,7 +89,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
           {clickRate !== null ? (
             <span>{clickRate}%</span>
           ) : (
-            <span className="text-[#a1a1aa]">off</span>
+            <span className="text-text-muted">off</span>
           )}
         </td>
         <td className="py-4 px-4 mono text-sm text-right">{replies.toLocaleString()}</td>
@@ -98,44 +98,50 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
         <td className="py-4 px-6 mono text-sm text-right font-semibold">{opportunities.toLocaleString()}</td>
       </tr>
       {expanded && (
-        <tr className="border-l-4 border-l-[#09090b]">
-          <td colSpan={12} className="p-6 bg-[#fafafa]">
+        <tr className="border-l-4 border-l-text-heading">
+          <td colSpan={12} className="p-6 bg-bg">
             {loading ? (
-              <div className="flex items-center gap-2 text-[#a1a1aa] text-sm py-4">
-                <div className="w-4 h-4 border-2 border-[#d4d4d8] border-t-[#52525b] rounded-full animate-spin" />
+              <div className="flex items-center gap-2 text-text-muted text-sm py-4">
+                <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--spinner-track)', borderTopColor: 'var(--spinner-fill)' }} />
                 Loading per-step analytics...
               </div>
             ) : steps && steps.length > 0 ? (
-              <div className="bg-[#f4f4f5] rounded-lg p-6 border border-[#e4e4e7]">
+              <div className="bg-surface-elevated rounded-lg p-6 border border-border-default">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Step-by-Step Open Rates */}
                   <div className="col-span-1">
-                    <h4 className="text-[10px] uppercase tracking-widest font-bold text-[#52525b] mb-4">
+                    <h4 className="text-[10px] uppercase tracking-widest font-bold text-text-body mb-4">
                       Step-by-Step Open Rates
                     </h4>
                     <div className="space-y-4">
                       {steps.filter(s => s.sentCount > 0).map((step) => (
                         <div key={`bar-${step.stepIndex}-${step.variant}`} className="space-y-1">
                           <div className="flex justify-between text-[11px] font-medium mb-1">
-                            <span className="text-[#09090b]">Step {step.stepNumber}: {step.subject || 'Untitled'}</span>
-                            <span className="mono text-[#09090b]">{step.openRate.toFixed(0)}%</span>
+                            <span className="text-text-heading">Step {step.stepNumber}: {step.subject || 'Untitled'}</span>
+                            <span className="mono text-text-heading">{step.openRate.toFixed(0)}%</span>
                           </div>
-                          <div className="w-full bg-[#e4e4e7] h-1.5 rounded-full">
+                          <div className="w-full h-1.5 rounded-full" style={{ backgroundColor: 'var(--border-default)' }}>
                             <div
                               className="h-full rounded-full"
                               style={{
                                 width: `${Math.min(step.openRate, 100)}%`,
-                                backgroundColor: step.isBestOpen ? '#09090b' : step.isWorstOpen ? '#a1a1aa' : '#52525b',
+                                backgroundColor: step.isBestOpen ? 'var(--chart-best)' : step.isWorstOpen ? 'var(--chart-worst)' : 'var(--chart-primary)',
                               }}
                             />
                           </div>
                           {step.isBestOpen && (
-                            <span className="inline-block px-1.5 py-0.5 text-[9px] bg-[#dcfce7] text-[#166534] font-bold rounded-sm mt-1">
+                            <span
+                              className="inline-block px-1.5 py-0.5 text-[9px] font-bold rounded-sm mt-1"
+                              style={{ backgroundColor: 'var(--badge-best-bg)', color: 'var(--badge-best-text)' }}
+                            >
                               BEST
                             </span>
                           )}
                           {step.isWorstOpen && (
-                            <span className="inline-block px-1.5 py-0.5 text-[9px] bg-[#fee2e2] text-[#991b1b] font-bold rounded-sm mt-1">
+                            <span
+                              className="inline-block px-1.5 py-0.5 text-[9px] font-bold rounded-sm mt-1"
+                              style={{ backgroundColor: 'var(--badge-worst-bg)', color: 'var(--badge-worst-text)' }}
+                            >
                               LOWEST
                             </span>
                           )}
@@ -148,7 +154,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                   <div className="col-span-2">
                     <table className="w-full text-[11px]">
                       <thead>
-                        <tr className="text-[#52525b] border-b border-[#e4e4e7]">
+                        <tr className="text-text-body border-b border-border-default">
                           <th className="py-2 font-bold text-left">STEP #</th>
                           <th className="py-2 font-bold text-left">SUBJECT</th>
                           <th className="py-2 font-bold text-right">SENT</th>
@@ -158,11 +164,11 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                           <th className="py-2 font-bold text-right">OPPS</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[#e4e4e7]/50 mono">
+                      <tbody className="divide-y divide-border-default/50 mono">
                         {steps.map((step) => (
                           <tr key={`table-${step.stepIndex}-${step.variant}`}>
-                            <td className="py-3 text-[#09090b]">{step.stepNumber}</td>
-                            <td className="py-3 font-sans font-medium text-[#09090b]">{step.subject || 'Untitled'}</td>
+                            <td className="py-3 text-text-heading">{step.stepNumber}</td>
+                            <td className="py-3 font-sans font-medium text-text-heading">{step.subject || 'Untitled'}</td>
                             <td className="py-3 text-right">{step.sentCount.toLocaleString()}</td>
                             <td className="py-3 text-right">{step.openedCount.toLocaleString()}</td>
                             <td className="py-3 text-right">{step.openRate > 0 ? `${step.openRate.toFixed(0)}%` : '—'}</td>
@@ -176,7 +182,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
                 </div>
               </div>
             ) : (
-              <div className="text-[#a1a1aa] text-sm py-4">No step data available for this campaign.</div>
+              <div className="text-text-muted text-sm py-4">No step data available for this campaign.</div>
             )}
           </td>
         </tr>
