@@ -82,6 +82,7 @@ export default function Dashboard() {
 
   const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '0.0';
   const replyRate = totalNew > 0 ? ((totalReplies / totalNew) * 100).toFixed(1) : '0.0';
+  const bounceRate = totalSent > 0 ? ((totalBounces / totalSent) * 100).toFixed(1) : '0.0';
 
   // Merge campaigns with analytics
   const campaignsWithAnalytics: CampaignWithAnalytics[] = campaigns.map((c) => {
@@ -161,14 +162,22 @@ export default function Dashboard() {
         ) : (
           <>
             {/* KPI Cards */}
-            <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
-              <KpiCard label="Emails Sent" value={totalSent} />
-              <KpiCard label="New Contacts" value={totalNew} />
-              <KpiCard label="Follow-ups" value={totalFollowups} />
-              <KpiCard label="Open Rate" value={`${openRate}%`} />
+            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <KpiCard
+                label="Emails Sent"
+                value={totalSent}
+                subValues={[
+                  { label: 'New Contacts', value: totalNew },
+                  { label: 'Follow-ups', value: totalFollowups },
+                ]}
+              />
+              <KpiCard
+                label="Open Rate"
+                value={`${openRate}%`}
+                tooltip="Calculated only for campaigns with open tracking enabled. Campaigns with tracking disabled are excluded."
+              />
               <KpiCard label="Reply Rate" value={`${replyRate}%`} />
-              <KpiCard label="Clicks" value={totalClicks} />
-              <KpiCard label="Bounces" value={totalBounces} />
+              <KpiCard label="Bounce Rate" value={`${bounceRate}%`} />
               <KpiCard label="Opportunities" value={totalOpps} />
             </section>
 
@@ -182,9 +191,7 @@ export default function Dashboard() {
             <CampaignTable campaigns={campaignsWithAnalytics} />
 
             {/* Lead Inventory */}
-            {leadInventory.length > 0 && (
-              <LeadInventory inventory={leadInventory} threshold={LEAD_ALERT_THRESHOLD} />
-            )}
+            <LeadInventory inventory={leadInventory} threshold={LEAD_ALERT_THRESHOLD} />
           </>
         )}
       </main>

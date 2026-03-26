@@ -25,7 +25,7 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
 
   const openRate = campaign.open_tracking && sent > 0 ? ((opens / sent) * 100).toFixed(1) : null;
   const replyRate = newContacts > 0 ? ((replies / newContacts) * 100).toFixed(1) : '0.0';
-  const clickRate = campaign.link_tracking && sent > 0 ? ((clicks / sent) * 100).toFixed(1) : null;
+  const bounceRate = sent > 0 ? ((bounces / sent) * 100).toFixed(1) : '0.0';
 
   async function toggleExpand() {
     if (expanded) {
@@ -76,7 +76,6 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
         <td className="py-4 px-4"><StatusBadge status={campaign.status} /></td>
         <td className="py-4 px-4 mono text-sm text-right">{sent.toLocaleString()}</td>
         <td className="py-4 px-4 mono text-sm text-right">{newContacts.toLocaleString()}</td>
-        <td className="py-4 px-4 mono text-sm text-right">{opens.toLocaleString()}</td>
         <td className="py-4 px-4 mono text-sm text-right">
           {openRate !== null ? (
             <span>{openRate}%</span>
@@ -84,22 +83,13 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
             <span className="text-text-muted">off</span>
           )}
         </td>
-        <td className="py-4 px-4 mono text-sm text-right">{clicks.toLocaleString()}</td>
-        <td className="py-4 px-4 mono text-sm text-right">
-          {clickRate !== null ? (
-            <span>{clickRate}%</span>
-          ) : (
-            <span className="text-text-muted">off</span>
-          )}
-        </td>
-        <td className="py-4 px-4 mono text-sm text-right">{replies.toLocaleString()}</td>
         <td className="py-4 px-4 mono text-sm text-right">{replyRate}%</td>
-        <td className="py-4 px-4 mono text-sm text-right">{bounces.toLocaleString()}</td>
+        <td className="py-4 px-4 mono text-sm text-right">{bounceRate}%</td>
         <td className="py-4 px-6 mono text-sm text-right font-semibold">{opportunities.toLocaleString()}</td>
       </tr>
       {expanded && (
         <tr className="border-l-4 border-l-text-heading">
-          <td colSpan={12} className="p-6 bg-bg">
+          <td colSpan={8} className="p-6 bg-bg">
             {loading ? (
               <div className="flex items-center gap-2 text-text-muted text-sm py-4">
                 <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--spinner-track)', borderTopColor: 'var(--spinner-fill)' }} />

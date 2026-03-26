@@ -102,7 +102,7 @@ export interface LeadInventory {
   isLow: boolean;
 }
 
-export type DateRange = 'last7' | 'last14' | 'mtd' | 'custom';
+export type DateRange = 'last7' | 'last30' | 'mtd' | 'custom';
 
 export interface DateRangeValue {
   startDate: string;
