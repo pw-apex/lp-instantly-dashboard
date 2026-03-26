@@ -88,7 +88,7 @@ export default function Dashboard() {
     return { ...c, analytics: a };
   });
 
-  // Lead inventory for active campaigns (from campaign list, not date-filtered analytics)
+  // Lead inventory for active campaigns
   const leadInventory: LeadInventoryType[] = campaigns
     .filter((c) => c.status === 1 && (c.leads_count ?? 0) > 0)
     .map((c) => {
@@ -117,11 +117,11 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="card p-8 max-w-md text-center">
           <div className="text-red text-4xl mb-4">!</div>
-          <h2 className="text-lg font-semibold text-slate-200 mb-2">Error Loading Dashboard</h2>
-          <p className="text-sm text-slate-400 mb-4">{error}</p>
+          <h2 className="text-lg font-semibold text-[#09090b] mb-2">Error Loading Dashboard</h2>
+          <p className="text-sm text-[#52525b] mb-4">{error}</p>
           <button
             onClick={fetchData}
-            className="px-4 py-2 bg-primary rounded-lg text-sm font-medium text-white hover:bg-primary/80 transition-colors"
+            className="px-4 py-2 bg-[#09090b] rounded-lg text-sm font-medium text-white hover:bg-[#27272a] transition-colors"
           >
             Retry
           </button>
@@ -133,48 +133,46 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-white/5 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-white">Instantly Analytics</h1>
-            <p className="text-xs text-slate-500">Luxury Presence Outbound Dashboard</p>
-          </div>
-          <DateRangeFilter
-            value={datePreset}
-            customStart={customStart}
-            customEnd={customEnd}
-            onChange={handleDateChange}
-          />
+      <header className="sticky top-0 z-10 h-14 bg-white border-b border-[#e4e4e7] px-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium text-[#09090b]">Instantly Analytics</span>
+          <span className="text-xs text-[#52525b] border-l border-[#e4e4e7] pl-3">Luxury Presence</span>
         </div>
+        <DateRangeFilter
+          value={datePreset}
+          customStart={customStart}
+          customEnd={customEnd}
+          onChange={handleDateChange}
+        />
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <main className="max-w-[1600px] mx-auto p-6 space-y-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="flex items-center gap-3 text-slate-400">
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center gap-3 text-[#a1a1aa]">
+              <div className="w-5 h-5 border-2 border-[#d4d4d8] border-t-[#52525b] rounded-full animate-spin" />
               Loading analytics...
             </div>
           </div>
         ) : (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-              <KpiCard label="Emails Sent" value={totalSent} color="#6366f1" />
-              <KpiCard label="New Contacts" value={totalNew} color="#22d3ee" />
-              <KpiCard label="Follow-ups" value={totalFollowups} color="#a78bfa" />
-              <KpiCard label="Open Rate" value={openRate} color="#f59e0b" suffix="%" />
-              <KpiCard label="Reply Rate" value={replyRate} color="#22c55e" suffix="%" />
-              <KpiCard label="Clicks" value={totalClicks} color="#f472b6" />
-              <KpiCard label="Bounces" value={totalBounces} color="#ef4444" />
-              <KpiCard label="Opportunities" value={totalOpps} color="#10b981" />
-            </div>
+            <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+              <KpiCard label="Emails Sent" value={totalSent} />
+              <KpiCard label="New Contacts" value={totalNew} />
+              <KpiCard label="Follow-ups" value={totalFollowups} />
+              <KpiCard label="Open Rate" value={`${openRate}%`} />
+              <KpiCard label="Reply Rate" value={`${replyRate}%`} />
+              <KpiCard label="Clicks" value={totalClicks} />
+              <KpiCard label="Bounces" value={totalBounces} />
+              <KpiCard label="Opportunities" value={totalOpps} />
+            </section>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <VolumeChart data={dailyData} />
               <EngagementChart data={dailyData} />
-            </div>
+            </section>
 
             {/* Campaign Table */}
             <CampaignTable campaigns={campaignsWithAnalytics} />

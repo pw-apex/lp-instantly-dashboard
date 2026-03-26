@@ -12,9 +12,17 @@ import {
 } from 'recharts';
 import type { StepAnalytics } from '@/lib/types';
 
-interface StepChartProps {
+type StepChartProps = {
   steps: StepAnalytics[];
-}
+};
+
+const tooltipStyle = {
+  background: '#ffffff',
+  border: '1px solid #e4e4e7',
+  borderRadius: '6px',
+  fontSize: '11px',
+  color: '#09090b',
+};
 
 export default function StepChart({ steps }: StepChartProps) {
   const chartData = steps
@@ -39,23 +47,18 @@ export default function StepChart({ steps }: StepChartProps) {
           <XAxis type="number" tick={{ fontSize: 10 }} unit="%" domain={[0, 'auto']} />
           <YAxis type="category" dataKey="name" width={50} tick={{ fontSize: 10 }} />
           <Tooltip
-            contentStyle={{
-              background: '#1a1a2e',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '8px',
-              fontSize: '11px',
-            }}
+            contentStyle={tooltipStyle}
             formatter={(value: number) => [`${value}%`, 'Open Rate']}
             labelFormatter={(label) => {
               const step = chartData.find(d => d.name === label);
               return step ? `${step.subject} (${step.opened.toLocaleString()}/${step.sent.toLocaleString()} sent)` : label;
             }}
           />
-          <Bar dataKey="Open Rate" radius={[0, 4, 4, 0]} background={{ fill: 'rgba(255,255,255,0.03)' }}>
+          <Bar dataKey="Open Rate" radius={[0, 4, 4, 0]} background={{ fill: '#f4f4f5' }}>
             {chartData.map((entry, index) => (
               <Cell
                 key={index}
-                fill={entry.isBest ? '#22c55e' : entry.isWorst ? '#ef4444' : '#f59e0b'}
+                fill={entry.isBest ? '#09090b' : entry.isWorst ? '#a1a1aa' : '#52525b'}
               />
             ))}
           </Bar>

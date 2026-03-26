@@ -1,9 +1,9 @@
 'use client';
 
-interface StatusFilterProps {
+type StatusFilterProps = {
   value: string;
   onChange: (status: string) => void;
-}
+};
 
 const filters = [
   { key: 'all', label: 'All' },
@@ -14,15 +14,15 @@ const filters = [
 
 export default function StatusFilter({ value, onChange }: StatusFilterProps) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-6">
       {filters.map((f) => (
         <button
           key={f.key}
           onClick={() => onChange(f.key)}
-          className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+          className={`text-sm pb-3 -mb-[1px] transition-colors ${
             value === f.key
-              ? 'bg-primary/20 text-primary'
-              : 'text-slate-400 hover:text-white hover:bg-white/5'
+              ? 'font-medium text-[#09090b] border-b-2 border-[#09090b]'
+              : 'text-[#52525b] hover:text-[#09090b]'
           }`}
         >
           {f.label}
