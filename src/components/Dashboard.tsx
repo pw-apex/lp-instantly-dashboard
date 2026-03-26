@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [analytics, setAnalytics] = useState<CampaignAnalytics[]>([]);
   const [dailyData, setDailyData] = useState<DailyAnalytics[]>([]);
+  const [allTimeAnalytics, setAllTimeAnalytics] = useState<CampaignAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,25 +41,28 @@ export default function Dashboard() {
         end_date: range.endDate,
       });
 
-      const [campaignsRes, analyticsRes, dailyRes] = await Promise.all([
+      const [campaignsRes, analyticsRes, dailyRes, allTimeRes] = await Promise.all([
         fetch('/api/campaigns'),
         fetch(`/api/campaigns/analytics?${params}`),
         fetch(`/api/campaigns/analytics/daily?${params}`),
+        fetch('/api/campaigns/analytics'),
       ]);
 
-      if (!campaignsRes.ok || !analyticsRes.ok || !dailyRes.ok) {
+      if (!campaignsRes.ok || !analyticsRes.ok || !dailyRes.ok || !allTimeRes.ok) {
         throw new Error('Failed to fetch data from API');
       }
 
-      const [campaignsData, analyticsData, dailyDataResult] = await Promise.all([
+      const [campaignsData, analyticsData, dailyDataResult, allTimeData] = await Promise.all([
         campaignsRes.json(),
         analyticsRes.json(),
         dailyRes.json(),
+        allTimeRes.json(),
       ]);
 
       setCampaigns(campaignsData);
       setAnalytics(analyticsData);
       setDailyData(dailyDataResult);
+      setAllTimeAnalytics(allTimeData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -90,23 +94,25 @@ export default function Dashboard() {
     return { ...c, analytics: a };
   });
 
-  // Lead inventory for active campaigns
+  // Lead inventory for active campaigns — source from all-time analytics (not date-filtered)
   const leadInventory: LeadInventoryType[] = campaigns
-    .filter((c) => c.status === 1 && (c.leads_count ?? 0) > 0)
+    .filter((c) => c.status === 1)
     .map((c) => {
-      const total = c.leads_count ?? 0;
-      const contacted = Math.min(c.leads_contacted_count ?? 0, total);
-      const remaining = total - contacted;
+      const a = allTimeAnalytics.find((an) => an.campaign_id === c.id);
+      const total = a?.leads_count ?? 0;
+      const contacted = a?.new_leads_contacted_count ?? 0;
+      const remaining = Math.max(total - contacted, 0);
       return {
         campaignId: c.id,
         campaignName: c.name,
         totalLeads: total,
-        contacted,
-        remaining: Math.max(remaining, 0),
+        contacted: Math.min(contacted, total),
+        remaining,
         percentContacted: total > 0 ? Math.min((contacted / total) * 100, 100) : 0,
         isLow: remaining < LEAD_ALERT_THRESHOLD,
       };
-    });
+    })
+    .filter((item) => item.totalLeads > 0);
 
   const handleDateChange = (preset: DateRange, start?: string, end?: string) => {
     setDatePreset(preset);
