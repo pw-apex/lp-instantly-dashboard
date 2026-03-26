@@ -6,10 +6,10 @@ type StatusFilterProps = {
 };
 
 const filters = [
-  { key: 'all', label: 'All' },
   { key: 'active', label: 'Active' },
   { key: 'paused', label: 'Paused' },
   { key: 'completed', label: 'Completed' },
+  { key: 'all', label: 'All' },
 ];
 
 export default function StatusFilter({ value, onChange }: StatusFilterProps) {

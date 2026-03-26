@@ -16,7 +16,7 @@ const statusMap: Record<string, number> = {
 };
 
 export default function CampaignTable({ campaigns }: CampaignTableProps) {
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('active');
   const [search, setSearch] = useState('');
 
   const filtered = campaigns
@@ -51,27 +51,23 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px]">
+        <table className="w-full min-w-[800px]">
           <thead>
             <tr className="bg-surface-elevated border-b border-border-default">
               <th className="text-left py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">Campaign</th>
               <th className="text-left py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Status</th>
               <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Sent</th>
               <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">New</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Opens</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Open %</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Clicks</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Click %</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Replies</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Reply %</th>
-              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Bounces</th>
+              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Open Rate</th>
+              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Reply Rate</th>
+              <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Bounce Rate</th>
               <th className="text-right py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">Opps</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-default">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={12} className="text-center py-8 text-text-muted text-sm">
+                <td colSpan={8} className="text-center py-8 text-text-muted text-sm">
                   No campaigns found
                 </td>
               </tr>

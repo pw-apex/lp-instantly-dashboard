@@ -16,14 +16,14 @@ describe('getDateRange', () => {
     expect(result.preset).toBe('last7');
   });
 
-  it('returns last 14 days range', () => {
+  it('returns last 30 days range', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-03-15'));
 
-    const result = getDateRange('last14');
-    expect(result.startDate).toBe('2026-03-01');
+    const result = getDateRange('last30');
+    expect(result.startDate).toBe('2026-02-13');
     expect(result.endDate).toBe('2026-03-15');
-    expect(result.preset).toBe('last14');
+    expect(result.preset).toBe('last30');
   });
 
   it('returns month-to-date range', () => {
@@ -56,7 +56,7 @@ describe('getDateRange', () => {
 describe('getPresetLabel', () => {
   it('returns correct labels', () => {
     expect(getPresetLabel('last7')).toBe('Last 7 Days');
-    expect(getPresetLabel('last14')).toBe('Last 14 Days');
+    expect(getPresetLabel('last30')).toBe('Last 30 Days');
     expect(getPresetLabel('mtd')).toBe('Month to Date');
     expect(getPresetLabel('custom')).toBe('Custom Range');
   });
