@@ -21,8 +21,8 @@ export default function StatusFilter({ value, onChange }: StatusFilterProps) {
           onClick={() => onChange(f.key)}
           className={`text-sm pb-3 -mb-[1px] transition-colors ${
             value === f.key
-              ? 'font-medium text-[#09090b] border-b-2 border-[#09090b]'
-              : 'text-[#52525b] hover:text-[#09090b]'
+              ? 'font-medium text-text-heading border-b-2 border-text-heading'
+              : 'text-text-body hover:text-text-heading'
           }`}
         >
           {f.label}

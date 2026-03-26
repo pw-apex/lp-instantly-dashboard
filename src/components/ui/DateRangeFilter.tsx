@@ -20,7 +20,7 @@ export default function DateRangeFilter({ value, customStart, customEnd, onChang
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <div className="hidden md:flex items-center gap-0.5 bg-[#f4f4f5] p-1 rounded-lg">
+      <div className="hidden md:flex items-center gap-0.5 bg-surface-elevated p-1 rounded-lg">
         {presets.map((preset) => (
           <button
             key={preset}
@@ -35,8 +35,8 @@ export default function DateRangeFilter({ value, customStart, customEnd, onChang
             }}
             className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
               value === preset
-                ? 'bg-white text-[#09090b] shadow-sm'
-                : 'text-[#71717a] hover:text-[#09090b]'
+                ? 'bg-surface text-text-heading shadow-sm'
+                : 'text-text-faint hover:text-text-heading'
             }`}
           >
             {getPresetLabel(preset)}
@@ -52,9 +52,9 @@ export default function DateRangeFilter({ value, customStart, customEnd, onChang
               setStart(e.target.value);
               if (e.target.value && end) onChange('custom', e.target.value, end);
             }}
-            className="bg-white border border-[#e4e4e7] rounded-md px-2 py-1 text-xs text-[#09090b] mono"
+            className="bg-surface border border-border-default rounded-md px-2 py-1 text-xs text-text-heading mono"
           />
-          <span className="text-[#a1a1aa] text-xs">to</span>
+          <span className="text-text-muted text-xs">to</span>
           <input
             type="date"
             value={end}
@@ -62,7 +62,7 @@ export default function DateRangeFilter({ value, customStart, customEnd, onChang
               setEnd(e.target.value);
               if (start && e.target.value) onChange('custom', start, e.target.value);
             }}
-            className="bg-white border border-[#e4e4e7] rounded-md px-2 py-1 text-xs text-[#09090b] mono"
+            className="bg-surface border border-border-default rounded-md px-2 py-1 text-xs text-text-heading mono"
           />
         </div>
       )}

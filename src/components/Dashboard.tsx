@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import DateRangeFilter from './ui/DateRangeFilter';
 import KpiCard from './ui/KpiCard';
+import ThemeToggle from './ui/ThemeToggle';
 import VolumeChart from './charts/VolumeChart';
 import EngagementChart from './charts/EngagementChart';
 import CampaignTable from './CampaignTable';
@@ -114,14 +115,14 @@ export default function Dashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-bg">
         <div className="card p-8 max-w-md text-center">
           <div className="text-red text-4xl mb-4">!</div>
-          <h2 className="text-lg font-semibold text-[#09090b] mb-2">Error Loading Dashboard</h2>
-          <p className="text-sm text-[#52525b] mb-4">{error}</p>
+          <h2 className="text-lg font-semibold text-text-heading mb-2">Error Loading Dashboard</h2>
+          <p className="text-sm text-text-body mb-4">{error}</p>
           <button
             onClick={fetchData}
-            className="px-4 py-2 bg-[#09090b] rounded-lg text-sm font-medium text-white hover:bg-[#27272a] transition-colors"
+            className="px-4 py-2 bg-text-heading rounded-lg text-sm font-medium text-bg hover:opacity-80 transition-opacity"
           >
             Retry
           </button>
@@ -131,26 +132,29 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-bg">
       {/* Header */}
-      <header className="sticky top-0 z-10 h-14 bg-white border-b border-[#e4e4e7] px-6 flex items-center justify-between">
+      <header className="sticky top-0 z-10 h-14 bg-surface border-b border-border-default px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-[#09090b]">Instantly Analytics</span>
-          <span className="text-xs text-[#52525b] border-l border-[#e4e4e7] pl-3">Luxury Presence</span>
+          <span className="text-sm font-medium text-text-heading">Instantly Analytics</span>
+          <span className="text-xs text-text-body border-l border-border-default pl-3">Luxury Presence</span>
         </div>
-        <DateRangeFilter
-          value={datePreset}
-          customStart={customStart}
-          customEnd={customEnd}
-          onChange={handleDateChange}
-        />
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <DateRangeFilter
+            value={datePreset}
+            customStart={customStart}
+            customEnd={customEnd}
+            onChange={handleDateChange}
+          />
+        </div>
       </header>
 
       <main className="max-w-[1600px] mx-auto p-6 space-y-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="flex items-center gap-3 text-[#a1a1aa]">
-              <div className="w-5 h-5 border-2 border-[#d4d4d8] border-t-[#52525b] rounded-full animate-spin" />
+            <div className="flex items-center gap-3 text-text-muted">
+              <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--spinner-track)', borderTopColor: 'var(--spinner-fill)' }} />
               Loading analytics...
             </div>
           </div>
