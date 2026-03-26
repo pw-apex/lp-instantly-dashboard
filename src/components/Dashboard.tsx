@@ -90,16 +90,16 @@ export default function Dashboard() {
     return { ...c, analytics: a };
   });
 
-  // Lead inventory for active campaigns
-  const leadInventory: LeadInventoryType[] = campaigns
-    .filter((c) => c.status === 1 && (c.leads_count ?? 0) > 0)
-    .map((c) => {
-      const total = c.leads_count ?? 0;
-      const contacted = Math.min(c.leads_contacted_count ?? 0, total);
+  // Lead inventory for active campaigns — sourced from analytics which has leads_count
+  const leadInventory: LeadInventoryType[] = analytics
+    .filter((a) => a.campaign_status === 1 && (a.leads_count ?? 0) > 0)
+    .map((a) => {
+      const total = a.leads_count ?? 0;
+      const contacted = Math.min(a.contacted_count ?? 0, total);
       const remaining = total - contacted;
       return {
-        campaignId: c.id,
-        campaignName: c.name,
+        campaignId: a.campaign_id ?? '',
+        campaignName: a.campaign_name ?? 'Unknown Campaign',
         totalLeads: total,
         contacted,
         remaining: Math.max(remaining, 0),
