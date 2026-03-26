@@ -1,20 +1,17 @@
-interface KpiCardProps {
+type KpiCardProps = {
   label: string;
   value: string | number;
-  color: string;
-  suffix?: string;
-}
+};
 
-export default function KpiCard({ label, value, color, suffix }: KpiCardProps) {
+export default function KpiCard({ label, value }: KpiCardProps) {
   return (
-    <div className="card p-4">
-      <div className="text-xs text-slate-400 uppercase tracking-wider mb-1">{label}</div>
-      <div className="flex items-baseline gap-1">
-        <span className="mono text-2xl font-semibold" style={{ color }}>
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </span>
-        {suffix && <span className="text-sm text-slate-500">{suffix}</span>}
-      </div>
+    <div className="bg-white p-4 rounded-lg border border-[#e4e4e7] hover:border-[#a1a1aa] transition-colors">
+      <span className="block text-[10px] uppercase tracking-widest text-[#52525b] font-medium mb-2">
+        {label}
+      </span>
+      <span className="mono text-2xl font-medium text-[#09090b]">
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </span>
     </div>
   );
 }
