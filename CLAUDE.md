@@ -10,9 +10,9 @@ Next.js 15 dashboard for Instantly.ai email campaign analytics. Displays campaig
 npm run dev       # Start dev server (port 3000)
 npm run build     # Production build — run this to verify before committing
 npm run lint      # ESLint via next lint
+npm run test      # Vitest — run all tests once
+npm run test:watch # Vitest in watch mode
 ```
-
-No test framework is configured yet. When adding tests, prefer Vitest.
 
 ## Tech stack
 
@@ -34,10 +34,10 @@ No test framework is configured yet. When adding tests, prefer Vitest.
 
 ## Workflow
 
-- Always run `npm run build` before committing to catch type errors and build failures
-- Run `npm run lint` and fix issues before committing
+- IMPORTANT: Run `/verify` before committing or creating a PR — it runs lint, test, and build in sequence
 - When making UI changes, verify they render correctly on the dev server
 - Prefer small, focused PRs over large sweeping changes
+- Write tests for new utility functions in `src/lib/` — colocate test files as `*.test.ts`
 
 ## Architecture notes
 
