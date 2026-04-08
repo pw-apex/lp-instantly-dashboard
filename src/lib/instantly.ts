@@ -1,4 +1,4 @@
-import type { Campaign, CampaignAnalytics, DailyAnalytics, StepAnalyticsRaw } from './types';
+import type { Campaign, CampaignAnalytics, DailyAnalytics, StepAnalyticsRaw, HourlyEmailCount } from './types';
 
 const BASE_URL = 'https://api.instantly.ai/api/v2';
 
@@ -98,6 +98,57 @@ export async function getStepAnalytics(campaignId: string): Promise<StepAnalytic
     }
   );
   return Array.isArray(data) ? data : [];
+}
+
+// List sent emails for a campaign (paginated with safety caps)
+type EmailRecord = {
+  id: string;
+  timestamp_created: string;
+  timestamp_email?: string;
+  campaign_id?: string;
+};
+
+type EmailListResponse = {
+  items: EmailRecord[];
+  next_starting_after?: string;
+};
+
+const MAX_EMAIL_PAGES = 10;
+const EMAIL_TIMEOUT_MS = 8000;
+
+export async function listEmails(params: {
+  campaign_id?: string;
+  maxPages?: number;
+  timeoutMs?: number;
+}): Promise<{ emails: EmailRecord[]; partial: boolean; pagesLoaded: number }> {
+  const maxPages = params.maxPages ?? MAX_EMAIL_PAGES;
+  const timeoutMs = params.timeoutMs ?? EMAIL_TIMEOUT_MS;
+  const startTime = Date.now();
+  const emails: EmailRecord[] = [];
+  let cursor: string | undefined;
+  let pagesLoaded = 0;
+
+  while (pagesLoaded < maxPages) {
+    if (Date.now() - startTime > timeoutMs) {
+      return { emails, partial: true, pagesLoaded };
+    }
+
+    const queryParams: Record<string, string> = {
+      limit: '100',
+      email_type: 'sent',
+    };
+    if (params.campaign_id) queryParams.campaign_id = params.campaign_id;
+    if (cursor) queryParams.starting_after = cursor;
+
+    const data = await apiFetch<EmailListResponse>('/emails', queryParams);
+    emails.push(...(data.items || []));
+    pagesLoaded++;
+
+    if (!data.next_starting_after || (data.items || []).length === 0) break;
+    cursor = data.next_starting_after;
+  }
+
+  return { emails, partial: pagesLoaded >= maxPages, pagesLoaded };
 }
 
 // Campaign detail type matching actual API shape

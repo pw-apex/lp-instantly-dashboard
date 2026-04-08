@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateGAHourlyToDaily, filterGAByDateRange, correlateData } from './ga-aggregation';
+import {
+  aggregateGAHourlyToDaily,
+  filterGAByDateRange,
+  correlateData,
+  emailsToHourlyCounts,
+  filterGAHourlyByDateRange,
+  correlateFunnelByHourOfDay,
+  correlateFunnelByDay,
+} from './ga-aggregation';
 import type { GAHourlyRecord, GADailyRecord, DailyAnalytics } from './types';
 
 describe('aggregateGAHourlyToDaily', () => {
@@ -134,6 +142,163 @@ describe('correlateData', () => {
 
     const result = correlateData(instantly, ga);
     expect(result[0].date).toBe('2026-03-01');
+    expect(result[1].date).toBe('2026-04-01');
+  });
+});
+
+describe('emailsToHourlyCounts', () => {
+  it('converts email timestamps to hourly counts', () => {
+    const emails = [
+      { timestamp_created: '2026-03-16T08:15:00Z' },
+      { timestamp_created: '2026-03-16T08:45:00Z' },
+      { timestamp_created: '2026-03-16T09:00:00Z' },
+    ];
+
+    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 2 });
+    expect(result[1]).toEqual({ dateHour: '2026031609', date: '2026-03-16', hour: 9, count: 1 });
+  });
+
+  it('prefers timestamp_email over timestamp_created', () => {
+    const emails = [
+      { timestamp_email: '2026-03-16T10:00:00Z', timestamp_created: '2026-03-16T08:00:00Z' },
+    ];
+
+    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    expect(result).toHaveLength(1);
+    expect(result[0].hour).toBe(10);
+  });
+
+  it('filters by date range', () => {
+    const emails = [
+      { timestamp_created: '2026-03-15T08:00:00Z' },
+      { timestamp_created: '2026-03-16T08:00:00Z' },
+      { timestamp_created: '2026-03-17T08:00:00Z' },
+    ];
+
+    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2026-03-16');
+  });
+
+  it('skips invalid timestamps', () => {
+    const emails = [
+      { timestamp_created: 'invalid' },
+      { timestamp_created: '2026-03-16T08:00:00Z' },
+    ];
+
+    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    expect(result).toHaveLength(1);
+  });
+
+  it('returns sorted results', () => {
+    const emails = [
+      { timestamp_created: '2026-03-17T09:00:00Z' },
+      { timestamp_created: '2026-03-16T08:00:00Z' },
+    ];
+
+    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-17');
+    expect(result[0].dateHour).toBe('2026031608');
+    expect(result[1].dateHour).toBe('2026031709');
+  });
+});
+
+describe('filterGAHourlyByDateRange', () => {
+  const hourly: GAHourlyRecord[] = [
+    { dateHour: '2026031608', date: '2026-03-16', hour: 8, sessions: 78, engagedSessions: 38, engagementRate: 0.487, avgEngagementTime: 6, eventsPerSession: 4, formSubmits: 1 },
+    { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 15, engagedSessions: 8, engagementRate: 0.53, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 0 },
+    { dateHour: '2026031808', date: '2026-03-18', hour: 8, sessions: 4, engagedSessions: 2, engagementRate: 0.5, avgEngagementTime: 1, eventsPerSession: 3, formSubmits: 0 },
+  ];
+
+  it('filters hourly records by date range', () => {
+    const result = filterGAHourlyByDateRange(hourly, '2026-03-16', '2026-03-17');
+    expect(result).toHaveLength(2);
+    expect(result[0].date).toBe('2026-03-16');
+    expect(result[1].date).toBe('2026-03-17');
+  });
+});
+
+describe('correlateFunnelByHourOfDay', () => {
+  it('produces 24 records for hours 0-23', () => {
+    const result = correlateFunnelByHourOfDay([], []);
+    expect(result).toHaveLength(24);
+    expect(result[0].hour).toBe(0);
+    expect(result[23].hour).toBe(23);
+  });
+
+  it('sums email sends and GA data across dates per hour', () => {
+    const emailHourly = [
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
+      { dateHour: '2026031708', date: '2026-03-17', hour: 8, count: 150 },
+      { dateHour: '2026031609', date: '2026-03-16', hour: 9, count: 50 },
+    ];
+    const gaHourly: GAHourlyRecord[] = [
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, sessions: 78, engagedSessions: 38, engagementRate: 0.487, avgEngagementTime: 6, eventsPerSession: 4, formSubmits: 1 },
+      { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 15, engagedSessions: 8, engagementRate: 0.53, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 2 },
+    ];
+
+    const result = correlateFunnelByHourOfDay(emailHourly, gaHourly);
+    const hour8 = result[8];
+    expect(hour8.emailsSent).toBe(250);
+    expect(hour8.sessions).toBe(93);
+    expect(hour8.formSubmits).toBe(3);
+
+    const hour9 = result[9];
+    expect(hour9.emailsSent).toBe(50);
+    expect(hour9.sessions).toBe(0);
+    expect(hour9.formSubmits).toBe(0);
+  });
+
+  it('returns 0 for hours with no data', () => {
+    const result = correlateFunnelByHourOfDay([], []);
+    expect(result.every((r) => r.emailsSent === 0 && r.sessions === 0 && r.formSubmits === 0)).toBe(true);
+  });
+});
+
+describe('correlateFunnelByDay', () => {
+  it('joins email and GA data on date', () => {
+    const emailHourly = [
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
+      { dateHour: '2026031609', date: '2026-03-16', hour: 9, count: 50 },
+    ];
+    const gaHourly: GAHourlyRecord[] = [
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, sessions: 78, engagedSessions: 38, engagementRate: 0.487, avgEngagementTime: 6, eventsPerSession: 4, formSubmits: 1 },
+      { dateHour: '2026031617', date: '2026-03-16', hour: 17, sessions: 28, engagedSessions: 19, engagementRate: 0.679, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 1 },
+    ];
+
+    const result = correlateFunnelByDay(emailHourly, gaHourly);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual({
+      date: '2026-03-16',
+      emailsSent: 150,
+      sessions: 106,
+      formSubmits: 2,
+    });
+  });
+
+  it('includes dates only in one source', () => {
+    const emailHourly = [
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
+    ];
+    const gaHourly: GAHourlyRecord[] = [
+      { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 10, engagedSessions: 5, engagementRate: 0.5, avgEngagementTime: 3, eventsPerSession: 4, formSubmits: 1 },
+    ];
+
+    const result = correlateFunnelByDay(emailHourly, gaHourly);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ date: '2026-03-16', emailsSent: 100, sessions: 0, formSubmits: 0 });
+    expect(result[1]).toEqual({ date: '2026-03-17', emailsSent: 0, sessions: 10, formSubmits: 1 });
+  });
+
+  it('returns sorted results', () => {
+    const emailHourly = [
+      { dateHour: '2026040108', date: '2026-04-01', hour: 8, count: 50 },
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
+    ];
+
+    const result = correlateFunnelByDay(emailHourly, []);
+    expect(result[0].date).toBe('2026-03-16');
     expect(result[1].date).toBe('2026-04-01');
   });
 });
