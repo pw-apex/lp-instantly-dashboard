@@ -3,9 +3,8 @@ import type {
   GADailyRecord,
   DailyAnalytics,
   CorrelatedDailyRecord,
-  HourlyEmailCount,
-  FunnelHourlyRecord,
-  FunnelDailyRecord,
+  EmailBucket,
+  FunnelDayRow,
 } from './types';
 
 export function aggregateGAHourlyToDaily(hourly: GAHourlyRecord[]): GADailyRecord[] {
@@ -77,12 +76,23 @@ export function correlateData(
 
 // Scanner Funnel aggregation functions
 
-export function emailsToHourlyCounts(
-  emails: Array<{ timestamp_email?: string; timestamp_created: string }>,
+function parseStepNumber(step: string): number {
+  const parts = step.split('_');
+  return parts.length >= 2 ? parseInt(parts[1], 10) + 1 : 1;
+}
+
+export function aggregateEmailsToBuckets(
+  emails: Array<{
+    timestamp_email?: string;
+    timestamp_created: string;
+    campaign_id?: string;
+    step?: string;
+    subject?: string;
+  }>,
   startDate: string,
   endDate: string,
-): HourlyEmailCount[] {
-  const countMap = new Map<string, number>();
+): EmailBucket[] {
+  const bucketMap = new Map<string, EmailBucket>();
 
   for (const email of emails) {
     const ts = email.timestamp_email || email.timestamp_created;
@@ -91,19 +101,31 @@ export function emailsToHourlyCounts(
     if (isNaN(d.getTime())) continue;
     const dateStr = d.toISOString().split('T')[0];
     if (dateStr < startDate || dateStr > endDate) continue;
+
     const hour = d.getUTCHours();
-    const dateHour = dateStr.replace(/-/g, '') + String(hour).padStart(2, '0');
-    countMap.set(dateHour, (countMap.get(dateHour) || 0) + 1);
+    const campaignId = email.campaign_id || 'unknown';
+    const step = email.step || '0_0_0';
+    const key = `${dateStr}|${hour}|${campaignId}|${step}`;
+
+    const existing = bucketMap.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      bucketMap.set(key, {
+        date: dateStr,
+        hour,
+        campaignId,
+        step,
+        stepNumber: parseStepNumber(step),
+        subject: email.subject || 'Untitled',
+        count: 1,
+      });
+    }
   }
 
-  return [...countMap.entries()]
-    .map(([dateHour, count]) => ({
-      dateHour,
-      date: `${dateHour.slice(0, 4)}-${dateHour.slice(4, 6)}-${dateHour.slice(6, 8)}`,
-      hour: parseInt(dateHour.slice(8, 10), 10),
-      count,
-    }))
-    .sort((a, b) => a.dateHour.localeCompare(b.dateHour));
+  return [...bucketMap.values()].sort((a, b) =>
+    a.date.localeCompare(b.date) || a.hour - b.hour,
+  );
 }
 
 export function filterGAHourlyByDateRange(
@@ -114,38 +136,12 @@ export function filterGAHourlyByDateRange(
   return hourly.filter((h) => h.date >= startDate && h.date <= endDate);
 }
 
-export function correlateFunnelByHourOfDay(
-  emailHourly: HourlyEmailCount[],
+export function buildFunnelDayRows(
+  buckets: EmailBucket[],
   gaHourly: GAHourlyRecord[],
-): FunnelHourlyRecord[] {
-  const result: FunnelHourlyRecord[] = [];
-
-  for (let h = 0; h < 24; h++) {
-    const emailsSent = emailHourly
-      .filter((e) => e.hour === h)
-      .reduce((sum, e) => sum + e.count, 0);
-    const sessions = gaHourly
-      .filter((g) => g.hour === h)
-      .reduce((sum, g) => sum + g.sessions, 0);
-    const formSubmits = gaHourly
-      .filter((g) => g.hour === h)
-      .reduce((sum, g) => sum + g.formSubmits, 0);
-
-    result.push({ hour: h, emailsSent, sessions, formSubmits });
-  }
-
-  return result;
-}
-
-export function correlateFunnelByDay(
-  emailHourly: HourlyEmailCount[],
-  gaHourly: GAHourlyRecord[],
-): FunnelDailyRecord[] {
-  const emailByDate = new Map<string, number>();
-  for (const e of emailHourly) {
-    emailByDate.set(e.date, (emailByDate.get(e.date) || 0) + e.count);
-  }
-
+  campaignNames: Map<string, string>,
+): FunnelDayRow[] {
+  // Group GA data by date
   const gaByDate = new Map<string, { sessions: number; formSubmits: number }>();
   for (const g of gaHourly) {
     const existing = gaByDate.get(g.date);
@@ -157,13 +153,71 @@ export function correlateFunnelByDay(
     }
   }
 
-  const allDates = new Set([...emailByDate.keys(), ...gaByDate.keys()]);
+  // Group buckets by date
+  const bucketsByDate = new Map<string, EmailBucket[]>();
+  for (const b of buckets) {
+    const existing = bucketsByDate.get(b.date);
+    if (existing) {
+      existing.push(b);
+    } else {
+      bucketsByDate.set(b.date, [b]);
+    }
+  }
+
+  const allDates = new Set([...bucketsByDate.keys(), ...gaByDate.keys()]);
+
   return [...allDates]
-    .sort()
-    .map((date) => ({
-      date,
-      emailsSent: emailByDate.get(date) ?? 0,
-      sessions: gaByDate.get(date)?.sessions ?? 0,
-      formSubmits: gaByDate.get(date)?.formSubmits ?? 0,
-    }));
+    .sort((a, b) => b.localeCompare(a)) // descending — most recent first
+    .map((date) => {
+      const dayBuckets = bucketsByDate.get(date) || [];
+      const ga = gaByDate.get(date);
+
+      // Group by campaign
+      const byCampaign = new Map<string, EmailBucket[]>();
+      for (const b of dayBuckets) {
+        const existing = byCampaign.get(b.campaignId);
+        if (existing) {
+          existing.push(b);
+        } else {
+          byCampaign.set(b.campaignId, [b]);
+        }
+      }
+
+      const campaigns = [...byCampaign.entries()].map(([campaignId, cBuckets]) => {
+        // Aggregate steps (dedup by step string)
+        const stepMap = new Map<string, { step: string; stepNumber: number; subject: string; count: number }>();
+        for (const b of cBuckets) {
+          const existing = stepMap.get(b.step);
+          if (existing) {
+            existing.count += b.count;
+          } else {
+            stepMap.set(b.step, { step: b.step, stepNumber: b.stepNumber, subject: b.subject, count: b.count });
+          }
+        }
+
+        // Aggregate hours
+        const hourMap = new Map<number, number>();
+        for (const b of cBuckets) {
+          hourMap.set(b.hour, (hourMap.get(b.hour) || 0) + b.count);
+        }
+
+        return {
+          campaignId,
+          campaignName: campaignNames.get(campaignId) || campaignId,
+          emailsSent: cBuckets.reduce((sum, b) => sum + b.count, 0),
+          steps: [...stepMap.values()].sort((a, b) => a.stepNumber - b.stepNumber),
+          hours: [...hourMap.entries()]
+            .map(([hour, count]) => ({ hour, count }))
+            .sort((a, b) => a.hour - b.hour),
+        };
+      });
+
+      return {
+        date,
+        emailsSent: dayBuckets.reduce((sum, b) => sum + b.count, 0),
+        sessions: ga?.sessions ?? 0,
+        formSubmits: ga?.formSubmits ?? 0,
+        campaigns,
+      };
+    });
 }

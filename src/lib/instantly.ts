@@ -1,4 +1,4 @@
-import type { Campaign, CampaignAnalytics, DailyAnalytics, StepAnalyticsRaw, HourlyEmailCount } from './types';
+import type { Campaign, CampaignAnalytics, DailyAnalytics, StepAnalyticsRaw } from './types';
 
 const BASE_URL = 'https://api.instantly.ai/api/v2';
 
@@ -106,6 +106,9 @@ type EmailRecord = {
   timestamp_created: string;
   timestamp_email?: string;
   campaign_id?: string;
+  step?: string;        // "0_3_0" = seqIdx_stepIdx_variantIdx
+  subject?: string;
+  eaccount?: string;
 };
 
 type EmailListResponse = {
