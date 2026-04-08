@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { listEmails } from '@/lib/instantly';
-import { emailsToHourlyCounts } from '@/lib/ga-aggregation';
+import { aggregateEmailsToBuckets } from '@/lib/ga-aggregation';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       campaign_id,
     });
 
-    const data = emailsToHourlyCounts(
+    const data = aggregateEmailsToBuckets(
       emails,
       start_date || '2000-01-01',
       end_date || '2099-12-31',

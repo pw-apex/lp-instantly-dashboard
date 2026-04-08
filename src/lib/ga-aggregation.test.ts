@@ -3,10 +3,9 @@ import {
   aggregateGAHourlyToDaily,
   filterGAByDateRange,
   correlateData,
-  emailsToHourlyCounts,
+  aggregateEmailsToBuckets,
   filterGAHourlyByDateRange,
-  correlateFunnelByHourOfDay,
-  correlateFunnelByDay,
+  buildFunnelDayRows,
 } from './ga-aggregation';
 import type { GAHourlyRecord, GADailyRecord, DailyAnalytics } from './types';
 
@@ -146,61 +145,68 @@ describe('correlateData', () => {
   });
 });
 
-describe('emailsToHourlyCounts', () => {
-  it('converts email timestamps to hourly counts', () => {
+describe('aggregateEmailsToBuckets', () => {
+  it('groups emails by date, hour, campaign, and step', () => {
     const emails = [
-      { timestamp_created: '2026-03-16T08:15:00Z' },
-      { timestamp_created: '2026-03-16T08:45:00Z' },
-      { timestamp_created: '2026-03-16T09:00:00Z' },
+      { timestamp_created: '2026-03-16T08:15:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Hello' },
+      { timestamp_created: '2026-03-16T08:45:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Hello' },
+      { timestamp_created: '2026-03-16T09:00:00Z', campaign_id: 'c1', step: '0_1_0', subject: 'Follow up' },
     ];
 
-    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 2 });
-    expect(result[1]).toEqual({ dateHour: '2026031609', date: '2026-03-16', hour: 9, count: 1 });
+    expect(result[0]).toMatchObject({ date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', count: 2 });
+    expect(result[1]).toMatchObject({ date: '2026-03-16', hour: 9, campaignId: 'c1', step: '0_1_0', count: 1 });
+  });
+
+  it('parses step number correctly (1-based)', () => {
+    const emails = [
+      { timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_3_0', subject: 'Step 4' },
+    ];
+
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
+    expect(result[0].stepNumber).toBe(4);
   });
 
   it('prefers timestamp_email over timestamp_created', () => {
     const emails = [
-      { timestamp_email: '2026-03-16T10:00:00Z', timestamp_created: '2026-03-16T08:00:00Z' },
+      { timestamp_email: '2026-03-16T10:00:00Z', timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Test' },
     ];
 
-    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
-    expect(result).toHaveLength(1);
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
     expect(result[0].hour).toBe(10);
   });
 
   it('filters by date range', () => {
     const emails = [
-      { timestamp_created: '2026-03-15T08:00:00Z' },
-      { timestamp_created: '2026-03-16T08:00:00Z' },
-      { timestamp_created: '2026-03-17T08:00:00Z' },
+      { timestamp_created: '2026-03-15T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'A' },
+      { timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'B' },
+      { timestamp_created: '2026-03-17T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'C' },
     ];
 
-    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
     expect(result).toHaveLength(1);
     expect(result[0].date).toBe('2026-03-16');
   });
 
   it('skips invalid timestamps', () => {
     const emails = [
-      { timestamp_created: 'invalid' },
-      { timestamp_created: '2026-03-16T08:00:00Z' },
+      { timestamp_created: 'invalid', campaign_id: 'c1', step: '0_0_0', subject: 'A' },
+      { timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'B' },
     ];
 
-    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-16');
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
     expect(result).toHaveLength(1);
   });
 
-  it('returns sorted results', () => {
+  it('defaults missing fields', () => {
     const emails = [
-      { timestamp_created: '2026-03-17T09:00:00Z' },
       { timestamp_created: '2026-03-16T08:00:00Z' },
     ];
 
-    const result = emailsToHourlyCounts(emails, '2026-03-16', '2026-03-17');
-    expect(result[0].dateHour).toBe('2026031608');
-    expect(result[1].dateHour).toBe('2026031709');
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
+    expect(result[0].campaignId).toBe('unknown');
+    expect(result[0].subject).toBe('Untitled');
   });
 });
 
@@ -219,86 +225,61 @@ describe('filterGAHourlyByDateRange', () => {
   });
 });
 
-describe('correlateFunnelByHourOfDay', () => {
-  it('produces 24 records for hours 0-23', () => {
-    const result = correlateFunnelByHourOfDay([], []);
-    expect(result).toHaveLength(24);
-    expect(result[0].hour).toBe(0);
-    expect(result[23].hour).toBe(23);
-  });
-
-  it('sums email sends and GA data across dates per hour', () => {
-    const emailHourly = [
-      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
-      { dateHour: '2026031708', date: '2026-03-17', hour: 8, count: 150 },
-      { dateHour: '2026031609', date: '2026-03-16', hour: 9, count: 50 },
-    ];
-    const gaHourly: GAHourlyRecord[] = [
-      { dateHour: '2026031608', date: '2026-03-16', hour: 8, sessions: 78, engagedSessions: 38, engagementRate: 0.487, avgEngagementTime: 6, eventsPerSession: 4, formSubmits: 1 },
-      { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 15, engagedSessions: 8, engagementRate: 0.53, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 2 },
-    ];
-
-    const result = correlateFunnelByHourOfDay(emailHourly, gaHourly);
-    const hour8 = result[8];
-    expect(hour8.emailsSent).toBe(250);
-    expect(hour8.sessions).toBe(93);
-    expect(hour8.formSubmits).toBe(3);
-
-    const hour9 = result[9];
-    expect(hour9.emailsSent).toBe(50);
-    expect(hour9.sessions).toBe(0);
-    expect(hour9.formSubmits).toBe(0);
-  });
-
-  it('returns 0 for hours with no data', () => {
-    const result = correlateFunnelByHourOfDay([], []);
-    expect(result.every((r) => r.emailsSent === 0 && r.sessions === 0 && r.formSubmits === 0)).toBe(true);
-  });
-});
-
-describe('correlateFunnelByDay', () => {
-  it('joins email and GA data on date', () => {
-    const emailHourly = [
-      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
-      { dateHour: '2026031609', date: '2026-03-16', hour: 9, count: 50 },
+describe('buildFunnelDayRows', () => {
+  it('merges email buckets with GA data by date', () => {
+    const buckets = [
+      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'Hello', count: 50 },
+      { date: '2026-03-16', hour: 9, campaignId: 'c1', step: '0_1_0', stepNumber: 2, subject: 'Follow up', count: 30 },
     ];
     const gaHourly: GAHourlyRecord[] = [
       { dateHour: '2026031608', date: '2026-03-16', hour: 8, sessions: 78, engagedSessions: 38, engagementRate: 0.487, avgEngagementTime: 6, eventsPerSession: 4, formSubmits: 1 },
       { dateHour: '2026031617', date: '2026-03-16', hour: 17, sessions: 28, engagedSessions: 19, engagementRate: 0.679, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 1 },
     ];
+    const names = new Map([['c1', 'My Campaign']]);
 
-    const result = correlateFunnelByDay(emailHourly, gaHourly);
+    const result = buildFunnelDayRows(buckets, gaHourly, names);
     expect(result).toHaveLength(1);
-    expect(result[0]).toEqual({
-      date: '2026-03-16',
-      emailsSent: 150,
-      sessions: 106,
-      formSubmits: 2,
-    });
-  });
-
-  it('includes dates only in one source', () => {
-    const emailHourly = [
-      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
-    ];
-    const gaHourly: GAHourlyRecord[] = [
-      { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 10, engagedSessions: 5, engagementRate: 0.5, avgEngagementTime: 3, eventsPerSession: 4, formSubmits: 1 },
-    ];
-
-    const result = correlateFunnelByDay(emailHourly, gaHourly);
-    expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ date: '2026-03-16', emailsSent: 100, sessions: 0, formSubmits: 0 });
-    expect(result[1]).toEqual({ date: '2026-03-17', emailsSent: 0, sessions: 10, formSubmits: 1 });
-  });
-
-  it('returns sorted results', () => {
-    const emailHourly = [
-      { dateHour: '2026040108', date: '2026-04-01', hour: 8, count: 50 },
-      { dateHour: '2026031608', date: '2026-03-16', hour: 8, count: 100 },
-    ];
-
-    const result = correlateFunnelByDay(emailHourly, []);
     expect(result[0].date).toBe('2026-03-16');
-    expect(result[1].date).toBe('2026-04-01');
+    expect(result[0].emailsSent).toBe(80);
+    expect(result[0].sessions).toBe(106);
+    expect(result[0].formSubmits).toBe(2);
+    expect(result[0].campaigns).toHaveLength(1);
+    expect(result[0].campaigns[0].campaignName).toBe('My Campaign');
+    expect(result[0].campaigns[0].steps).toHaveLength(2);
+    expect(result[0].campaigns[0].hours).toHaveLength(2);
+  });
+
+  it('groups by campaign within a day', () => {
+    const buckets = [
+      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 50 },
+      { date: '2026-03-16', hour: 8, campaignId: 'c2', step: '0_0_0', stepNumber: 1, subject: 'B', count: 30 },
+    ];
+    const names = new Map([['c1', 'Campaign 1'], ['c2', 'Campaign 2']]);
+
+    const result = buildFunnelDayRows(buckets, [], names);
+    expect(result[0].campaigns).toHaveLength(2);
+  });
+
+  it('sorts by date descending', () => {
+    const buckets = [
+      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 10 },
+      { date: '2026-04-01', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 20 },
+    ];
+
+    const result = buildFunnelDayRows(buckets, [], new Map());
+    expect(result[0].date).toBe('2026-04-01');
+    expect(result[1].date).toBe('2026-03-16');
+  });
+
+  it('includes dates only in GA with zero emails', () => {
+    const gaHourly: GAHourlyRecord[] = [
+      { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 10, engagedSessions: 5, engagementRate: 0.5, avgEngagementTime: 3, eventsPerSession: 4, formSubmits: 3 },
+    ];
+
+    const result = buildFunnelDayRows([], gaHourly, new Map());
+    expect(result).toHaveLength(1);
+    expect(result[0].emailsSent).toBe(0);
+    expect(result[0].sessions).toBe(10);
+    expect(result[0].formSubmits).toBe(3);
   });
 });
