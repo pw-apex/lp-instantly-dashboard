@@ -28,9 +28,8 @@ export async function GET(request: NextRequest) {
       totalEmails: emails.length,
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch email data' },
-      { status: 500 },
-    );
+    const message = error instanceof Error ? error.message : 'Failed to fetch email data';
+    const status = message.includes('429') ? 429 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

@@ -115,6 +115,10 @@ type EmailListResponse = {
 
 const MAX_EMAIL_PAGES = 10;
 const EMAIL_TIMEOUT_MS = 8000;
+const INTER_PAGE_DELAY_MS = 200;
+const MAX_RETRIES = 2;
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 export async function listEmails(params: {
   campaign_id?: string;
@@ -140,12 +144,31 @@ export async function listEmails(params: {
     if (params.campaign_id) queryParams.campaign_id = params.campaign_id;
     if (cursor) queryParams.starting_after = cursor;
 
-    const data = await apiFetch<EmailListResponse>('/emails', queryParams);
-    emails.push(...(data.items || []));
+    let data: EmailListResponse | undefined;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        data = await apiFetch<EmailListResponse>('/emails', queryParams);
+        break;
+      } catch (err) {
+        const is429 = err instanceof Error && err.message.includes('429');
+        if (is429 && attempt < MAX_RETRIES) {
+          await sleep(2000 * (attempt + 1));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    emails.push(...(data!.items || []));
     pagesLoaded++;
 
-    if (!data.next_starting_after || (data.items || []).length === 0) break;
-    cursor = data.next_starting_after;
+    if (!data!.next_starting_after || (data!.items || []).length === 0) break;
+    cursor = data!.next_starting_after;
+
+    // Pace requests to stay under rate limit
+    if (pagesLoaded < maxPages) {
+      await sleep(INTER_PAGE_DELAY_MS);
+    }
   }
 
   return { emails, partial: pagesLoaded >= maxPages, pagesLoaded };
