@@ -226,6 +226,7 @@ export default function Dashboard() {
                 campaigns={campaigns}
                 startDate={range.startDate}
                 endDate={range.endDate}
+                dailyData={dailyData}
               />
             </section>
 
