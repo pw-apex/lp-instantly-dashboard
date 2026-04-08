@@ -146,22 +146,26 @@ describe('correlateData', () => {
 });
 
 describe('aggregateEmailsToBuckets', () => {
-  it('groups emails by date, hour, campaign, and step', () => {
+  // Note: timestamps are UTC, converted to Pacific Time (UTC-7 for PDT, UTC-8 for PST)
+  // March 2026 is PDT (UTC-7), so 17:15 UTC = 10:15 AM PT
+
+  it('converts UTC timestamps to Pacific Time hours', () => {
     const emails = [
-      { timestamp_created: '2026-03-16T08:15:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Hello' },
-      { timestamp_created: '2026-03-16T08:45:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Hello' },
-      { timestamp_created: '2026-03-16T09:00:00Z', campaign_id: 'c1', step: '0_1_0', subject: 'Follow up' },
+      { timestamp_created: '2026-03-16T17:15:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Hello' },
+      { timestamp_created: '2026-03-16T17:45:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Hello' },
+      { timestamp_created: '2026-03-16T18:00:00Z', campaign_id: 'c1', step: '0_1_0', subject: 'Follow up' },
     ];
 
     const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
     expect(result).toHaveLength(2);
-    expect(result[0]).toMatchObject({ date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', count: 2 });
-    expect(result[1]).toMatchObject({ date: '2026-03-16', hour: 9, campaignId: 'c1', step: '0_1_0', count: 1 });
+    // 17:15 UTC = 10:15 AM PT, 18:00 UTC = 11:00 AM PT
+    expect(result[0]).toMatchObject({ date: '2026-03-16', hour: 10, campaignId: 'c1', step: '0_0_0', count: 2 });
+    expect(result[1]).toMatchObject({ date: '2026-03-16', hour: 11, campaignId: 'c1', step: '0_1_0', count: 1 });
   });
 
   it('parses step number correctly (1-based)', () => {
     const emails = [
-      { timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_3_0', subject: 'Step 4' },
+      { timestamp_created: '2026-03-16T17:00:00Z', campaign_id: 'c1', step: '0_3_0', subject: 'Step 4' },
     ];
 
     const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
@@ -170,18 +174,31 @@ describe('aggregateEmailsToBuckets', () => {
 
   it('prefers timestamp_email over timestamp_created', () => {
     const emails = [
-      { timestamp_email: '2026-03-16T10:00:00Z', timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Test' },
+      { timestamp_email: '2026-03-16T20:00:00Z', timestamp_created: '2026-03-16T17:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Test' },
     ];
 
     const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
-    expect(result[0].hour).toBe(10);
+    // 20:00 UTC = 1pm PT
+    expect(result[0].hour).toBe(13);
+  });
+
+  it('handles date boundary in Pacific Time', () => {
+    // 06:00 UTC on Mar 17 = 11pm PT on Mar 16 (PDT, UTC-7)
+    const emails = [
+      { timestamp_created: '2026-03-17T06:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'Late' },
+    ];
+
+    const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
+    expect(result).toHaveLength(1);
+    expect(result[0].date).toBe('2026-03-16');
+    expect(result[0].hour).toBe(23);
   });
 
   it('filters by date range', () => {
     const emails = [
-      { timestamp_created: '2026-03-15T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'A' },
-      { timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'B' },
-      { timestamp_created: '2026-03-17T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'C' },
+      { timestamp_created: '2026-03-15T17:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'A' },
+      { timestamp_created: '2026-03-16T17:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'B' },
+      { timestamp_created: '2026-03-17T17:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'C' },
     ];
 
     const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
@@ -192,7 +209,7 @@ describe('aggregateEmailsToBuckets', () => {
   it('skips invalid timestamps', () => {
     const emails = [
       { timestamp_created: 'invalid', campaign_id: 'c1', step: '0_0_0', subject: 'A' },
-      { timestamp_created: '2026-03-16T08:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'B' },
+      { timestamp_created: '2026-03-16T17:00:00Z', campaign_id: 'c1', step: '0_0_0', subject: 'B' },
     ];
 
     const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
@@ -201,7 +218,7 @@ describe('aggregateEmailsToBuckets', () => {
 
   it('defaults missing fields', () => {
     const emails = [
-      { timestamp_created: '2026-03-16T08:00:00Z' },
+      { timestamp_created: '2026-03-16T17:00:00Z' },
     ];
 
     const result = aggregateEmailsToBuckets(emails, '2026-03-16', '2026-03-16');
@@ -247,11 +264,24 @@ describe('buildFunnelDayRows', () => {
     expect(result[0].opens).toBe(40);
     expect(result[0].sessions).toBe(106);
     expect(result[0].formSubmits).toBe(2);
-    expect(result[0].campaigns).toHaveLength(1);
-    expect(result[0].campaigns[0].campaignName).toBe('My Campaign');
   });
 
-  it('builds hourly correlation table merging emails and GA', () => {
+  it('populates hourly email details per hour slot', () => {
+    const buckets = [
+      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'Hello', count: 50 },
+      { date: '2026-03-16', hour: 8, campaignId: 'c2', step: '0_1_0', stepNumber: 2, subject: 'Follow up', count: 30 },
+    ];
+    const names = new Map([['c1', 'Campaign 1'], ['c2', 'Campaign 2']]);
+
+    const result = buildFunnelDayRows(buckets, [], names, emptyOpens);
+    const hour8 = result[0].hourly[0];
+    expect(hour8.sent).toBe(80);
+    expect(hour8.emails).toHaveLength(2);
+    expect(hour8.emails[0]).toMatchObject({ campaignName: 'Campaign 1', stepNumber: 1, subject: 'Hello', count: 50 });
+    expect(hour8.emails[1]).toMatchObject({ campaignName: 'Campaign 2', stepNumber: 2, subject: 'Follow up', count: 30 });
+  });
+
+  it('builds hourly slots merging emails and GA data', () => {
     const buckets = [
       { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 50 },
     ];
@@ -262,20 +292,10 @@ describe('buildFunnelDayRows', () => {
 
     const result = buildFunnelDayRows(buckets, gaHourly, new Map(), emptyOpens);
     const hourly = result[0].hourly;
-    expect(hourly).toHaveLength(2); // hours 8 and 17
-    expect(hourly[0]).toEqual({ hour: 8, sent: 50, sessions: 78, formSubmits: 1 });
-    expect(hourly[1]).toEqual({ hour: 17, sent: 0, sessions: 28, formSubmits: 3 });
-  });
-
-  it('groups by campaign within a day', () => {
-    const buckets = [
-      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 50 },
-      { date: '2026-03-16', hour: 8, campaignId: 'c2', step: '0_0_0', stepNumber: 1, subject: 'B', count: 30 },
-    ];
-    const names = new Map([['c1', 'Campaign 1'], ['c2', 'Campaign 2']]);
-
-    const result = buildFunnelDayRows(buckets, [], names, emptyOpens);
-    expect(result[0].campaigns).toHaveLength(2);
+    expect(hourly).toHaveLength(2);
+    expect(hourly[0]).toMatchObject({ hour: 8, sent: 50, sessions: 78, formSubmits: 1 });
+    expect(hourly[1]).toMatchObject({ hour: 17, sent: 0, sessions: 28, formSubmits: 3 });
+    expect(hourly[1].emails).toHaveLength(0);
   });
 
   it('sorts by date descending', () => {
@@ -299,7 +319,6 @@ describe('buildFunnelDayRows', () => {
     expect(result[0].emailsSent).toBe(0);
     expect(result[0].opens).toBe(0);
     expect(result[0].sessions).toBe(10);
-    expect(result[0].formSubmits).toBe(3);
   });
 
   it('defaults opens to 0 when not in dailyOpens map', () => {

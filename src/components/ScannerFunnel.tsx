@@ -16,7 +16,6 @@ import type {
 } from '@/lib/types';
 
 const MIN_SUBMITS_OPTIONS = [0, 1, 2, 3, 5, 10];
-const MIN_EMAILS_OPTIONS = [0, 10, 20, 30, 50, 100];
 
 type ScannerFunnelProps = {
   campaigns: Campaign[];
@@ -32,7 +31,6 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
   const [error, setError] = useState<string | null>(null);
   const [partial, setPartial] = useState(false);
   const [minFormSubmits, setMinFormSubmits] = useState(3);
-  const [minEmails, setMinEmails] = useState(30);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -100,8 +98,8 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
   );
 
   const filteredRows = useMemo(
-    () => allRows.filter((r) => r.formSubmits >= minFormSubmits && r.emailsSent >= minEmails),
-    [allRows, minFormSubmits, minEmails],
+    () => allRows.filter((r) => r.formSubmits >= minFormSubmits),
+    [allRows, minFormSubmits],
   );
 
   const activeCampaigns = campaigns.filter((c) => c.status === 1);
@@ -111,24 +109,6 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
       <div className="px-6 py-4 border-b border-border-default flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-text-heading">Scanner Funnel Performance</h3>
         <div className="flex items-center gap-4 flex-wrap">
-          {/* Min emails filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest font-bold text-text-body">
-              Min Emails
-            </span>
-            <select
-              value={minEmails}
-              onChange={(e) => setMinEmails(Number(e.target.value))}
-              className="text-xs bg-surface-elevated border-none rounded-md px-2 py-1 mono text-text-heading"
-            >
-              {MIN_EMAILS_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n === 0 ? 'All' : `≥ ${n}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Form submit filter */}
           <div className="flex items-center gap-2">
             <span className="text-[10px] uppercase tracking-widest font-bold text-text-body">

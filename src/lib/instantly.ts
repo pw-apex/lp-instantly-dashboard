@@ -116,9 +116,9 @@ type EmailListResponse = {
   next_starting_after?: string;
 };
 
-const MAX_EMAIL_PAGES = 10;
+const MAX_EMAIL_PAGES = 5;
 const EMAIL_TIMEOUT_MS = 8000;
-const INTER_PAGE_DELAY_MS = 200;
+const INTER_PAGE_DELAY_MS = 500;
 const MAX_RETRIES = 2;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
