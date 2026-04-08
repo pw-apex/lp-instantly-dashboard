@@ -165,11 +165,20 @@ export type EmailDetailResponse = {
   totalEmails: number;
 };
 
+export type FunnelHourSlot = {
+  hour: number;
+  sent: number;
+  sessions: number;
+  formSubmits: number;
+};
+
 export type FunnelDayRow = {
   date: string;
   emailsSent: number;
+  opens: number;
   sessions: number;
   formSubmits: number;
+  hourly: FunnelHourSlot[];
   campaigns: FunnelCampaignBreakdown[];
 };
 

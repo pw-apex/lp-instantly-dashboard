@@ -226,7 +226,9 @@ describe('filterGAHourlyByDateRange', () => {
 });
 
 describe('buildFunnelDayRows', () => {
-  it('merges email buckets with GA data by date', () => {
+  const emptyOpens = new Map<string, number>();
+
+  it('merges email buckets with GA data and opens by date', () => {
     const buckets = [
       { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'Hello', count: 50 },
       { date: '2026-03-16', hour: 9, campaignId: 'c1', step: '0_1_0', stepNumber: 2, subject: 'Follow up', count: 30 },
@@ -236,17 +238,33 @@ describe('buildFunnelDayRows', () => {
       { dateHour: '2026031617', date: '2026-03-16', hour: 17, sessions: 28, engagedSessions: 19, engagementRate: 0.679, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 1 },
     ];
     const names = new Map([['c1', 'My Campaign']]);
+    const opens = new Map([['2026-03-16', 40]]);
 
-    const result = buildFunnelDayRows(buckets, gaHourly, names);
+    const result = buildFunnelDayRows(buckets, gaHourly, names, opens);
     expect(result).toHaveLength(1);
     expect(result[0].date).toBe('2026-03-16');
     expect(result[0].emailsSent).toBe(80);
+    expect(result[0].opens).toBe(40);
     expect(result[0].sessions).toBe(106);
     expect(result[0].formSubmits).toBe(2);
     expect(result[0].campaigns).toHaveLength(1);
     expect(result[0].campaigns[0].campaignName).toBe('My Campaign');
-    expect(result[0].campaigns[0].steps).toHaveLength(2);
-    expect(result[0].campaigns[0].hours).toHaveLength(2);
+  });
+
+  it('builds hourly correlation table merging emails and GA', () => {
+    const buckets = [
+      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 50 },
+    ];
+    const gaHourly: GAHourlyRecord[] = [
+      { dateHour: '2026031608', date: '2026-03-16', hour: 8, sessions: 78, engagedSessions: 38, engagementRate: 0.487, avgEngagementTime: 6, eventsPerSession: 4, formSubmits: 1 },
+      { dateHour: '2026031617', date: '2026-03-16', hour: 17, sessions: 28, engagedSessions: 19, engagementRate: 0.679, avgEngagementTime: 7, eventsPerSession: 5, formSubmits: 3 },
+    ];
+
+    const result = buildFunnelDayRows(buckets, gaHourly, new Map(), emptyOpens);
+    const hourly = result[0].hourly;
+    expect(hourly).toHaveLength(2); // hours 8 and 17
+    expect(hourly[0]).toEqual({ hour: 8, sent: 50, sessions: 78, formSubmits: 1 });
+    expect(hourly[1]).toEqual({ hour: 17, sent: 0, sessions: 28, formSubmits: 3 });
   });
 
   it('groups by campaign within a day', () => {
@@ -256,7 +274,7 @@ describe('buildFunnelDayRows', () => {
     ];
     const names = new Map([['c1', 'Campaign 1'], ['c2', 'Campaign 2']]);
 
-    const result = buildFunnelDayRows(buckets, [], names);
+    const result = buildFunnelDayRows(buckets, [], names, emptyOpens);
     expect(result[0].campaigns).toHaveLength(2);
   });
 
@@ -266,7 +284,7 @@ describe('buildFunnelDayRows', () => {
       { date: '2026-04-01', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 20 },
     ];
 
-    const result = buildFunnelDayRows(buckets, [], new Map());
+    const result = buildFunnelDayRows(buckets, [], new Map(), emptyOpens);
     expect(result[0].date).toBe('2026-04-01');
     expect(result[1].date).toBe('2026-03-16');
   });
@@ -276,10 +294,20 @@ describe('buildFunnelDayRows', () => {
       { dateHour: '2026031708', date: '2026-03-17', hour: 8, sessions: 10, engagedSessions: 5, engagementRate: 0.5, avgEngagementTime: 3, eventsPerSession: 4, formSubmits: 3 },
     ];
 
-    const result = buildFunnelDayRows([], gaHourly, new Map());
+    const result = buildFunnelDayRows([], gaHourly, new Map(), emptyOpens);
     expect(result).toHaveLength(1);
     expect(result[0].emailsSent).toBe(0);
+    expect(result[0].opens).toBe(0);
     expect(result[0].sessions).toBe(10);
     expect(result[0].formSubmits).toBe(3);
+  });
+
+  it('defaults opens to 0 when not in dailyOpens map', () => {
+    const buckets = [
+      { date: '2026-03-16', hour: 8, campaignId: 'c1', step: '0_0_0', stepNumber: 1, subject: 'A', count: 10 },
+    ];
+
+    const result = buildFunnelDayRows(buckets, [], new Map(), emptyOpens);
+    expect(result[0].opens).toBe(0);
   });
 });

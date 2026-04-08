@@ -5,6 +5,7 @@ import type {
   CorrelatedDailyRecord,
   EmailBucket,
   FunnelDayRow,
+  FunnelHourSlot,
 } from './types';
 
 export function aggregateGAHourlyToDaily(hourly: GAHourlyRecord[]): GADailyRecord[] {
@@ -140,8 +141,9 @@ export function buildFunnelDayRows(
   buckets: EmailBucket[],
   gaHourly: GAHourlyRecord[],
   campaignNames: Map<string, string>,
+  dailyOpens: Map<string, number>,
 ): FunnelDayRow[] {
-  // Group GA data by date
+  // Group GA data by date (daily totals)
   const gaByDate = new Map<string, { sessions: number; formSubmits: number }>();
   for (const g of gaHourly) {
     const existing = gaByDate.get(g.date);
@@ -150,6 +152,19 @@ export function buildFunnelDayRows(
       existing.formSubmits += g.formSubmits;
     } else {
       gaByDate.set(g.date, { sessions: g.sessions, formSubmits: g.formSubmits });
+    }
+  }
+
+  // Group GA data by date+hour (for hourly correlation table)
+  const gaByDateHour = new Map<string, { sessions: number; formSubmits: number }>();
+  for (const g of gaHourly) {
+    const key = `${g.date}|${g.hour}`;
+    const existing = gaByDateHour.get(key);
+    if (existing) {
+      existing.sessions += g.sessions;
+      existing.formSubmits += g.formSubmits;
+    } else {
+      gaByDateHour.set(key, { sessions: g.sessions, formSubmits: g.formSubmits });
     }
   }
 
@@ -172,6 +187,30 @@ export function buildFunnelDayRows(
       const dayBuckets = bucketsByDate.get(date) || [];
       const ga = gaByDate.get(date);
 
+      // Build hourly correlation table (site-wide)
+      const emailsByHour = new Map<number, number>();
+      for (const b of dayBuckets) {
+        emailsByHour.set(b.hour, (emailsByHour.get(b.hour) || 0) + b.count);
+      }
+
+      const gaHoursForDate = gaHourly.filter((g) => g.date === date);
+      const allHours = new Set<number>([
+        ...emailsByHour.keys(),
+        ...gaHoursForDate.map((g) => g.hour),
+      ]);
+
+      const hourly: FunnelHourSlot[] = [...allHours]
+        .sort((a, b) => a - b)
+        .map((hour) => {
+          const gaH = gaByDateHour.get(`${date}|${hour}`);
+          return {
+            hour,
+            sent: emailsByHour.get(hour) ?? 0,
+            sessions: gaH?.sessions ?? 0,
+            formSubmits: gaH?.formSubmits ?? 0,
+          };
+        });
+
       // Group by campaign
       const byCampaign = new Map<string, EmailBucket[]>();
       for (const b of dayBuckets) {
@@ -184,7 +223,6 @@ export function buildFunnelDayRows(
       }
 
       const campaigns = [...byCampaign.entries()].map(([campaignId, cBuckets]) => {
-        // Aggregate steps (dedup by step string)
         const stepMap = new Map<string, { step: string; stepNumber: number; subject: string; count: number }>();
         for (const b of cBuckets) {
           const existing = stepMap.get(b.step);
@@ -195,7 +233,6 @@ export function buildFunnelDayRows(
           }
         }
 
-        // Aggregate hours
         const hourMap = new Map<number, number>();
         for (const b of cBuckets) {
           hourMap.set(b.hour, (hourMap.get(b.hour) || 0) + b.count);
@@ -215,8 +252,10 @@ export function buildFunnelDayRows(
       return {
         date,
         emailsSent: dayBuckets.reduce((sum, b) => sum + b.count, 0),
+        opens: dailyOpens.get(date) ?? 0,
         sessions: ga?.sessions ?? 0,
         formSubmits: ga?.formSubmits ?? 0,
+        hourly,
         campaigns,
       };
     });

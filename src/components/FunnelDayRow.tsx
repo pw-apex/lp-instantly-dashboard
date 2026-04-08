@@ -44,12 +44,45 @@ export default function FunnelDayRow({ row }: FunnelDayRowProps) {
           </div>
         </td>
         <td className="py-4 px-4 mono text-sm text-right">{row.emailsSent.toLocaleString()}</td>
+        <td className="py-4 px-4 mono text-sm text-right">{row.opens.toLocaleString()}</td>
         <td className="py-4 px-4 mono text-sm text-right">{row.sessions.toLocaleString()}</td>
         <td className="py-4 px-6 mono text-sm text-right font-semibold">{row.formSubmits.toLocaleString()}</td>
       </tr>
       {expanded && (
         <tr className="border-l-4 border-l-text-heading">
-          <td colSpan={4} className="p-6 bg-bg">
+          <td colSpan={5} className="p-6 bg-bg">
+            {/* Hourly Activity Correlation */}
+            {row.hourly.length > 0 && (
+              <div className="bg-surface-elevated rounded-lg p-5 border border-border-default mb-6">
+                <h4 className="text-[10px] uppercase tracking-widest font-bold text-text-body mb-3">
+                  Hourly Activity
+                </h4>
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="text-text-body border-b border-border-default">
+                      <th className="py-2 font-bold text-left">Hour</th>
+                      <th className="py-2 font-bold text-right">Sent</th>
+                      <th className="py-2 font-bold text-right">Sessions</th>
+                      <th className="py-2 font-bold text-right">Form Submits</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border-default/50 mono">
+                    {row.hourly.map((h) => (
+                      <tr key={h.hour}>
+                        <td className="py-2 text-text-heading">{HOUR_LABELS[h.hour]}</td>
+                        <td className="py-2 text-right">{h.sent > 0 ? h.sent.toLocaleString() : '—'}</td>
+                        <td className="py-2 text-right">{h.sessions > 0 ? h.sessions.toLocaleString() : '—'}</td>
+                        <td className="py-2 text-right font-semibold">
+                          {h.formSubmits > 0 ? h.formSubmits.toLocaleString() : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Campaign Breakdown */}
             {row.campaigns.length === 0 ? (
               <div className="text-text-muted text-sm">No email data for this day.</div>
             ) : (
@@ -96,10 +129,10 @@ export default function FunnelDayRow({ row }: FunnelDayRowProps) {
                         </table>
                       </div>
 
-                      {/* Hourly Breakdown */}
+                      {/* Campaign Hourly Send Pills */}
                       <div>
                         <h5 className="text-[10px] uppercase tracking-widest font-bold text-text-body mb-3">
-                          Hourly Breakdown
+                          Send Times
                         </h5>
                         <div className="flex flex-wrap gap-1.5">
                           {campaign.hours.map((h) => (
