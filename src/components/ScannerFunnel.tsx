@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import FunnelChart from './charts/FunnelChart';
 import { GA_HOURLY_DATA } from '@/lib/ga-data';
 import {
@@ -29,36 +29,45 @@ export default function ScannerFunnel({ campaigns, startDate, endDate }: Scanner
   const [error, setError] = useState<string | null>(null);
   const [partial, setPartial] = useState(false);
   const [view, setView] = useState<'hourly' | 'daily'>('hourly');
-
-  const fetchEmailData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        start_date: startDate,
-        end_date: endDate,
-      });
-      if (selectedCampaignId) {
-        params.set('campaign_id', selectedCampaignId);
-      }
-
-      const res = await fetch(`/api/emails/hourly?${params}`);
-      if (!res.ok) {
-        throw new Error('Failed to fetch email hourly data');
-      }
-      const result: EmailHourlyResponse = await res.json();
-      setEmailHourly(result.data);
-      setPartial(result.partial);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  }, [startDate, endDate, selectedCampaignId]);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchEmailData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const params = new URLSearchParams({
+          start_date: startDate,
+          end_date: endDate,
+        });
+        if (selectedCampaignId) {
+          params.set('campaign_id', selectedCampaignId);
+        }
+
+        const res = await fetch(`/api/emails/hourly?${params}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          throw new Error('Failed to fetch email hourly data');
+        }
+        const result: EmailHourlyResponse = await res.json();
+        setEmailHourly(result.data);
+        setPartial(result.partial);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
     fetchEmailData();
-  }, [fetchEmailData]);
+    return () => controller.abort();
+  }, [startDate, endDate, selectedCampaignId, retryKey]);
 
   const filteredGA = filterGAHourlyByDateRange(GA_HOURLY_DATA, startDate, endDate);
   const hourlyData: FunnelHourlyRecord[] = correlateFunnelByHourOfDay(emailHourly, filteredGA);
@@ -141,7 +150,7 @@ export default function ScannerFunnel({ campaigns, startDate, endDate }: Scanner
         <div className="flex flex-col items-center justify-center h-80 gap-3">
           <p className="text-sm text-text-muted">{error}</p>
           <button
-            onClick={fetchEmailData}
+            onClick={() => setRetryKey((k) => k + 1)}
             className="px-4 py-2 bg-text-heading rounded-lg text-sm font-medium text-bg hover:opacity-80 transition-opacity"
           >
             Retry
