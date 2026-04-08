@@ -6,6 +6,7 @@ import type {
   EmailBucket,
   FunnelDayRow,
   FunnelHourSlot,
+  FunnelHourEmail,
 } from './types';
 
 export function aggregateGAHourlyToDaily(hourly: GAHourlyRecord[]): GADailyRecord[] {
@@ -100,10 +101,13 @@ export function aggregateEmailsToBuckets(
     if (!ts) continue;
     const d = new Date(ts);
     if (isNaN(d.getTime())) continue;
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = d.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
     if (dateStr < startDate || dateStr > endDate) continue;
 
-    const hour = d.getUTCHours();
+    const hour = parseInt(
+      d.toLocaleString('en-US', { timeZone: 'America/Los_Angeles', hour: 'numeric', hour12: false }),
+      10,
+    );
     const campaignId = email.campaign_id || 'unknown';
     const step = email.step || '0_0_0';
     const key = `${dateStr}|${hour}|${campaignId}|${step}`;
@@ -199,55 +203,48 @@ export function buildFunnelDayRows(
         ...gaHoursForDate.map((g) => g.hour),
       ]);
 
+      // Build per-hour email detail
+      const emailsByDateHour = new Map<number, EmailBucket[]>();
+      for (const b of dayBuckets) {
+        const existing = emailsByDateHour.get(b.hour);
+        if (existing) {
+          existing.push(b);
+        } else {
+          emailsByDateHour.set(b.hour, [b]);
+        }
+      }
+
       const hourly: FunnelHourSlot[] = [...allHours]
         .sort((a, b) => a - b)
         .map((hour) => {
           const gaH = gaByDateHour.get(`${date}|${hour}`);
+          const hourBuckets = emailsByDateHour.get(hour) || [];
+
+          // Aggregate emails by (campaign, step) for this hour
+          const emailMap = new Map<string, FunnelHourEmail>();
+          for (const b of hourBuckets) {
+            const key = `${b.campaignId}|${b.step}`;
+            const existing = emailMap.get(key);
+            if (existing) {
+              existing.count += b.count;
+            } else {
+              emailMap.set(key, {
+                campaignName: campaignNames.get(b.campaignId) || b.campaignId,
+                stepNumber: b.stepNumber,
+                subject: b.subject,
+                count: b.count,
+              });
+            }
+          }
+
           return {
             hour,
             sent: emailsByHour.get(hour) ?? 0,
             sessions: gaH?.sessions ?? 0,
             formSubmits: gaH?.formSubmits ?? 0,
+            emails: [...emailMap.values()].sort((a, b) => b.count - a.count),
           };
         });
-
-      // Group by campaign
-      const byCampaign = new Map<string, EmailBucket[]>();
-      for (const b of dayBuckets) {
-        const existing = byCampaign.get(b.campaignId);
-        if (existing) {
-          existing.push(b);
-        } else {
-          byCampaign.set(b.campaignId, [b]);
-        }
-      }
-
-      const campaigns = [...byCampaign.entries()].map(([campaignId, cBuckets]) => {
-        const stepMap = new Map<string, { step: string; stepNumber: number; subject: string; count: number }>();
-        for (const b of cBuckets) {
-          const existing = stepMap.get(b.step);
-          if (existing) {
-            existing.count += b.count;
-          } else {
-            stepMap.set(b.step, { step: b.step, stepNumber: b.stepNumber, subject: b.subject, count: b.count });
-          }
-        }
-
-        const hourMap = new Map<number, number>();
-        for (const b of cBuckets) {
-          hourMap.set(b.hour, (hourMap.get(b.hour) || 0) + b.count);
-        }
-
-        return {
-          campaignId,
-          campaignName: campaignNames.get(campaignId) || campaignId,
-          emailsSent: cBuckets.reduce((sum, b) => sum + b.count, 0),
-          steps: [...stepMap.values()].sort((a, b) => a.stepNumber - b.stepNumber),
-          hours: [...hourMap.entries()]
-            .map(([hour, count]) => ({ hour, count }))
-            .sort((a, b) => a.hour - b.hour),
-        };
-      });
 
       return {
         date,
@@ -256,7 +253,6 @@ export function buildFunnelDayRows(
         sessions: ga?.sessions ?? 0,
         formSubmits: ga?.formSubmits ?? 0,
         hourly,
-        campaigns,
       };
     });
 }

@@ -1,16 +1,82 @@
 'use client';
 
 import { useState } from 'react';
-import type { FunnelDayRow as FunnelDayRowType } from '@/lib/types';
+import type { FunnelDayRow as FunnelDayRowType, FunnelHourSlot } from '@/lib/types';
 
 const HOUR_LABELS = [
-  '12a', '1a', '2a', '3a', '4a', '5a', '6a', '7a', '8a', '9a', '10a', '11a',
-  '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p',
+  '12am', '1am', '2am', '3am', '4am', '5am', '6am', '7am', '8am', '9am', '10am', '11am',
+  '12pm', '1pm', '2pm', '3pm', '4pm', '5pm', '6pm', '7pm', '8pm', '9pm', '10pm', '11pm',
 ];
 
 type FunnelDayRowProps = {
   row: FunnelDayRowType;
 };
+
+function HourRow({ slot }: { slot: FunnelHourSlot }) {
+  const [open, setOpen] = useState(false);
+  const hasEmails = slot.sent > 0;
+
+  return (
+    <>
+      <tr
+        onClick={hasEmails ? () => setOpen(!open) : undefined}
+        className={hasEmails ? 'cursor-pointer hover:bg-hover transition-colors' : ''}
+      >
+        <td className="py-2 text-text-heading">
+          <div className="flex items-center gap-1.5">
+            {hasEmails ? (
+              <svg
+                className={`w-2.5 h-2.5 text-text-muted transition-transform ${open ? 'rotate-90' : ''}`}
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
+              <span className="w-2.5" />
+            )}
+            {HOUR_LABELS[slot.hour]}
+          </div>
+        </td>
+        <td className="py-2 text-right">{slot.sent > 0 ? slot.sent.toLocaleString() : '—'}</td>
+        <td className="py-2 text-right">{slot.sessions > 0 ? slot.sessions.toLocaleString() : '—'}</td>
+        <td className="py-2 text-right font-semibold">
+          {slot.formSubmits > 0 ? slot.formSubmits.toLocaleString() : '—'}
+        </td>
+      </tr>
+      {open && slot.emails.length > 0 && (
+        <tr>
+          <td colSpan={4} className="pb-3 pt-0 pl-8">
+            <table className="w-full text-[10px]">
+              <thead>
+                <tr className="text-text-muted">
+                  <th className="py-1 font-bold text-left">Step</th>
+                  <th className="py-1 font-bold text-left">Subject</th>
+                  <th className="py-1 font-bold text-left">Campaign</th>
+                  <th className="py-1 font-bold text-right">Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {slot.emails.map((e, i) => (
+                  <tr key={i} className="text-text-body">
+                    <td className="py-0.5 mono">{e.stepNumber}</td>
+                    <td className="py-0.5 font-medium text-text-heading truncate max-w-xs">{e.subject}</td>
+                    <td className="py-0.5 text-text-muted truncate max-w-[160px]">{e.campaignName}</td>
+                    <td className="py-0.5 mono text-right">{e.count.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
 
 export default function FunnelDayRow({ row }: FunnelDayRowProps) {
   const [expanded, setExpanded] = useState(false);
@@ -51,13 +117,12 @@ export default function FunnelDayRow({ row }: FunnelDayRowProps) {
       {expanded && (
         <tr className="border-l-4 border-l-text-heading">
           <td colSpan={5} className="p-6 bg-bg">
-            {/* Hourly Activity Correlation */}
-            {row.hourly.length > 0 && (
-              <div className="bg-surface-elevated rounded-lg p-5 border border-border-default mb-6">
+            {row.hourly.length > 0 ? (
+              <div className="bg-surface-elevated rounded-lg p-5 border border-border-default">
                 <h4 className="text-[10px] uppercase tracking-widest font-bold text-text-body mb-3">
                   Hourly Activity
                 </h4>
-                <table className="w-full text-[11px]">
+                <table className="w-full text-[11px] mono">
                   <thead>
                     <tr className="text-text-body border-b border-border-default">
                       <th className="py-2 font-bold text-left">Hour</th>
@@ -66,90 +131,15 @@ export default function FunnelDayRow({ row }: FunnelDayRowProps) {
                       <th className="py-2 font-bold text-right">Form Submits</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border-default/50 mono">
-                    {row.hourly.map((h) => (
-                      <tr key={h.hour}>
-                        <td className="py-2 text-text-heading">{HOUR_LABELS[h.hour]}</td>
-                        <td className="py-2 text-right">{h.sent > 0 ? h.sent.toLocaleString() : '—'}</td>
-                        <td className="py-2 text-right">{h.sessions > 0 ? h.sessions.toLocaleString() : '—'}</td>
-                        <td className="py-2 text-right font-semibold">
-                          {h.formSubmits > 0 ? h.formSubmits.toLocaleString() : '—'}
-                        </td>
-                      </tr>
+                  <tbody className="divide-y divide-border-default/50">
+                    {row.hourly.map((slot) => (
+                      <HourRow key={slot.hour} slot={slot} />
                     ))}
                   </tbody>
                 </table>
               </div>
-            )}
-
-            {/* Campaign Breakdown */}
-            {row.campaigns.length === 0 ? (
-              <div className="text-text-muted text-sm">No email data for this day.</div>
             ) : (
-              <div className="space-y-6">
-                {row.campaigns.map((campaign) => (
-                  <div
-                    key={campaign.campaignId}
-                    className="bg-surface-elevated rounded-lg p-5 border border-border-default"
-                  >
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-xs font-semibold text-text-heading truncate max-w-md">
-                        {campaign.campaignName}
-                      </h4>
-                      <span className="text-[10px] mono text-text-muted">
-                        {campaign.emailsSent.toLocaleString()} emails
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Steps / Sequence Emails */}
-                      <div>
-                        <h5 className="text-[10px] uppercase tracking-widest font-bold text-text-body mb-3">
-                          Sequence Emails Sent
-                        </h5>
-                        <table className="w-full text-[11px]">
-                          <thead>
-                            <tr className="text-text-body border-b border-border-default">
-                              <th className="py-2 font-bold text-left">Step</th>
-                              <th className="py-2 font-bold text-left">Subject</th>
-                              <th className="py-2 font-bold text-right">Count</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border-default/50 mono">
-                            {campaign.steps.map((s) => (
-                              <tr key={s.step}>
-                                <td className="py-2 text-text-heading">{s.stepNumber}</td>
-                                <td className="py-2 font-sans font-medium text-text-heading truncate max-w-xs">
-                                  {s.subject}
-                                </td>
-                                <td className="py-2 text-right">{s.count.toLocaleString()}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Campaign Hourly Send Pills */}
-                      <div>
-                        <h5 className="text-[10px] uppercase tracking-widest font-bold text-text-body mb-3">
-                          Send Times
-                        </h5>
-                        <div className="flex flex-wrap gap-1.5">
-                          {campaign.hours.map((h) => (
-                            <span
-                              key={h.hour}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] mono bg-bg border border-border-default text-text-heading"
-                            >
-                              <span className="text-text-muted">{HOUR_LABELS[h.hour]}</span>
-                              <span className="font-semibold">{h.count}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div className="text-text-muted text-sm">No hourly data for this day.</div>
             )}
           </td>
         </tr>
