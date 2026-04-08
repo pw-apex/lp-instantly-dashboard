@@ -6,9 +6,12 @@ import KpiCard from './ui/KpiCard';
 import ThemeToggle from './ui/ThemeToggle';
 import VolumeChart from './charts/VolumeChart';
 import EngagementChart from './charts/EngagementChart';
+import CorrelationChart from './charts/CorrelationChart';
 import CampaignTable from './CampaignTable';
 import LeadInventory from './LeadInventory';
 import { getDateRange } from '@/lib/dates';
+import { GA_DAILY_DATA } from '@/lib/ga-data';
+import { filterGAByDateRange, correlateData } from '@/lib/ga-aggregation';
 import type {
   DateRange,
   Campaign,
@@ -83,6 +86,17 @@ export default function Dashboard() {
   const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '0.0';
   const replyRate = totalNew > 0 ? ((totalReplies / totalNew) * 100).toFixed(1) : '0.0';
   const bounceRate = totalSent > 0 ? ((totalBounces / totalSent) * 100).toFixed(1) : '0.0';
+
+  // GA data (hardcoded, filtered by same date range)
+  const range = getDateRange(datePreset, customStart, customEnd);
+  const filteredGA = filterGAByDateRange(GA_DAILY_DATA, range.startDate, range.endDate);
+  const totalGASessions = filteredGA.reduce((sum, d) => sum + d.sessions, 0);
+  const totalGAEngaged = filteredGA.reduce((sum, d) => sum + d.engagedSessions, 0);
+  const totalFormSubmits = filteredGA.reduce((sum, d) => sum + d.formSubmits, 0);
+  const gaEngagementRate = totalGASessions > 0
+    ? ((totalGAEngaged / totalGASessions) * 100).toFixed(1)
+    : '0.0';
+  const correlatedData = correlateData(dailyData, filteredGA);
 
   // Merge campaigns with analytics
   const campaignsWithAnalytics: CampaignWithAnalytics[] = campaigns.map((c) => {
@@ -166,7 +180,7 @@ export default function Dashboard() {
         ) : (
           <>
             {/* KPI Cards */}
-            <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
               <KpiCard
                 label="Emails Sent"
                 value={totalSent}
@@ -183,12 +197,26 @@ export default function Dashboard() {
               <KpiCard label="Reply Rate" value={`${replyRate}%`} />
               <KpiCard label="Bounce Rate" value={`${bounceRate}%`} />
               <KpiCard label="Opportunities" value={totalOpps} />
+              <KpiCard
+                label="LP Sessions"
+                value={totalGASessions}
+                subValues={[
+                  { label: 'Engaged', value: totalGAEngaged },
+                  { label: 'Eng. Rate', value: `${gaEngagementRate}%` },
+                ]}
+              />
+              <KpiCard label="Form Submits" value={totalFormSubmits} />
             </section>
 
             {/* Charts */}
             <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <VolumeChart data={dailyData} />
               <EngagementChart data={dailyData} />
+            </section>
+
+            {/* Email vs. LP Correlation */}
+            <section>
+              <CorrelationChart data={correlatedData} />
             </section>
 
             {/* Campaign Table */}
