@@ -145,3 +145,33 @@ export type CorrelatedDailyRecord = {
   formSubmits: number;
   engagementRate: number;
 };
+
+// Scanner Funnel types
+
+export type HourlyEmailCount = {
+  dateHour: string;   // YYYYMMDDHH
+  date: string;       // YYYY-MM-DD
+  hour: number;       // 0-23
+  count: number;
+};
+
+export type FunnelHourlyRecord = {
+  hour: number;       // 0-23
+  emailsSent: number;
+  sessions: number;
+  formSubmits: number;
+};
+
+export type FunnelDailyRecord = {
+  date: string;
+  emailsSent: number;
+  sessions: number;
+  formSubmits: number;
+};
+
+export type EmailHourlyResponse = {
+  data: HourlyEmailCount[];
+  partial: boolean;
+  pagesLoaded: number;
+  totalEmails: number;
+};

@@ -9,6 +9,7 @@ import EngagementChart from './charts/EngagementChart';
 import CorrelationChart from './charts/CorrelationChart';
 import CampaignTable from './CampaignTable';
 import LeadInventory from './LeadInventory';
+import ScannerFunnel from './ScannerFunnel';
 import { getDateRange } from '@/lib/dates';
 import { GA_DAILY_DATA } from '@/lib/ga-data';
 import { filterGAByDateRange, correlateData } from '@/lib/ga-aggregation';
@@ -217,6 +218,15 @@ export default function Dashboard() {
             {/* Email vs. LP Correlation */}
             <section>
               <CorrelationChart data={correlatedData} />
+            </section>
+
+            {/* Scanner Funnel Performance */}
+            <section>
+              <ScannerFunnel
+                campaigns={campaigns}
+                startDate={range.startDate}
+                endDate={range.endDate}
+              />
             </section>
 
             {/* Campaign Table */}
