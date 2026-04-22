@@ -9,6 +9,7 @@ import EngagementChart from './charts/EngagementChart';
 import CorrelationChart from './charts/CorrelationChart';
 import CampaignTable from './CampaignTable';
 import ScannerFunnel from './ScannerFunnel';
+import LeadInventory from './LeadInventory';
 import { getDateRange } from '@/lib/dates';
 import { GA_DAILY_DATA } from '@/lib/ga-data';
 import { filterGAByDateRange, correlateData } from '@/lib/ga-aggregation';
@@ -18,7 +19,10 @@ import type {
   CampaignAnalytics,
   DailyAnalytics,
   CampaignWithAnalytics,
+  LeadInventory as LeadInventoryType,
 } from '@/lib/types';
+
+const LEAD_ALERT_THRESHOLD = 500;
 
 export default function Dashboard() {
   const [datePreset, setDatePreset] = useState<DateRange>('mtd');
@@ -108,6 +112,28 @@ export default function Dashboard() {
     const a = analytics.find((an) => an.campaign_id === c.id);
     return { ...c, analytics: a };
   });
+
+  // Lead inventory for active campaigns. Prefer cumulative contacted_count over
+  // date-filtered new_leads_contacted_count so "remaining" reflects true
+  // uncontacted leads regardless of the date range picker.
+  const leadInventory: LeadInventoryType[] = campaigns
+    .filter((c) => c.status === 1)
+    .map((c) => {
+      const a = analytics.find((an) => an.campaign_id === c.id);
+      const total = a?.leads_count ?? 0;
+      const contacted = a?.contacted_count ?? a?.new_leads_contacted_count ?? 0;
+      const remaining = Math.max(total - contacted, 0);
+      return {
+        campaignId: c.id,
+        campaignName: c.name,
+        totalLeads: total,
+        contacted: Math.min(contacted, total),
+        remaining,
+        percentContacted: total > 0 ? Math.min((contacted / total) * 100, 100) : 0,
+        isLow: remaining < LEAD_ALERT_THRESHOLD,
+      };
+    })
+    .filter((item) => item.totalLeads > 0);
 
   const handleDateChange = (preset: DateRange, start?: string, end?: string) => {
     setDatePreset(preset);
@@ -199,13 +225,16 @@ export default function Dashboard() {
               <CorrelationChart data={correlatedData} />
             </section>
 
-            {/* Scanner Funnel Performance */}
+            {/* Campaign Breakdown */}
+            <CampaignTable campaigns={campaignsWithAnalytics} />
+
+            {/* Daily GA4 Performance */}
             <section>
               <ScannerFunnel startDate={range.startDate} endDate={range.endDate} />
             </section>
 
-            {/* Campaign Table */}
-            <CampaignTable campaigns={campaignsWithAnalytics} />
+            {/* Lead Inventory */}
+            <LeadInventory inventory={leadInventory} threshold={LEAD_ALERT_THRESHOLD} />
           </>
         )}
       </main>

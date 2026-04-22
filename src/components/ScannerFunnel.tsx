@@ -119,7 +119,7 @@ export default function ScannerFunnel({ startDate, endDate }: ScannerFunnelProps
   return (
     <section className="bg-surface rounded-lg border border-border-default overflow-hidden">
       <div className="px-6 py-4 border-b border-border-default flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <h3 className="text-sm font-medium text-text-heading">Scanner Funnel Performance</h3>
+        <h3 className="text-sm font-medium text-text-heading">Daily GA4 Performance</h3>
         <div className="flex items-center gap-2">
           <span className="text-[10px] uppercase tracking-widest font-bold text-text-body">
             Min Submits
