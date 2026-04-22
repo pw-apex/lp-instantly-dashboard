@@ -25,6 +25,9 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
 
   return (
     <section className="bg-surface rounded-lg border border-border-default overflow-hidden">
+      <div className="px-6 py-4 border-b border-border-default">
+        <h3 className="text-sm font-medium text-text-heading">Campaign Breakdown</h3>
+      </div>
       <div className="px-6 py-4 border-b border-border-default flex items-center justify-between">
         <StatusFilter value={filter} onChange={setFilter} />
         <div className="relative">
