@@ -19,13 +19,13 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
   const newContacts = a?.new_leads_contacted_count ?? 0;
   const opens = a?.open_count_unique ?? 0;
   const replies = a?.reply_count_unique ?? a?.reply_count ?? 0;
-  const clicks = a?.link_click_count ?? 0;
+  const clicks = a?.link_click_count_unique ?? a?.link_click_count ?? 0;
   const bounces = a?.bounced_count ?? 0;
-  const opportunities = a?.total_opportunities ?? 0;
 
   const openRate = campaign.open_tracking && sent > 0 ? ((opens / sent) * 100).toFixed(1) : null;
   const replyRate = newContacts > 0 ? ((replies / newContacts) * 100).toFixed(1) : '0.0';
   const bounceRate = sent > 0 ? ((bounces / sent) * 100).toFixed(1) : '0.0';
+  const clickRate = campaign.link_tracking && sent > 0 ? ((clicks / sent) * 100).toFixed(1) : null;
 
   async function toggleExpand() {
     if (expanded) {
@@ -85,7 +85,13 @@ export default function CampaignRow({ campaign }: CampaignRowProps) {
         </td>
         <td className="py-4 px-4 mono text-sm text-right">{replyRate}%</td>
         <td className="py-4 px-4 mono text-sm text-right">{bounceRate}%</td>
-        <td className="py-4 px-6 mono text-sm text-right font-semibold">{opportunities.toLocaleString()}</td>
+        <td className="py-4 px-6 mono text-sm text-right font-semibold">
+          {clickRate !== null ? (
+            <span>{clickRate}%</span>
+          ) : (
+            <span className="text-text-muted">off</span>
+          )}
+        </td>
       </tr>
       {expanded && (
         <tr className="border-l-4 border-l-text-heading">
