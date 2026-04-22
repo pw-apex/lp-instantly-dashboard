@@ -61,7 +61,7 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
               <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Open Rate</th>
               <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Reply Rate</th>
               <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">Bounce Rate</th>
-              <th className="text-right py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">Opps</th>
+              <th className="text-right py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">Click Rate</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border-default">
