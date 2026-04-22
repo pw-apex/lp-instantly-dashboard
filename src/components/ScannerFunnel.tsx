@@ -3,40 +3,78 @@
 import { useState, useEffect, useMemo } from 'react';
 import FunnelDayRow from './FunnelDayRow';
 import { GA_DAILY_DATA } from '@/lib/ga-data';
-import {
-  filterGAByDateRange,
-  buildFunnelDayRows,
-} from '@/lib/ga-aggregation';
+import { filterGAByDateRange } from '@/lib/ga-aggregation';
 import type {
-  Campaign,
-  DailyAnalytics,
-  EmailBucket,
-  EmailDetailResponse,
+  DailyCampaignSend,
   FunnelDayRow as FunnelDayRowType,
+  GADailyRecord,
 } from '@/lib/types';
 
 const MIN_SUBMITS_OPTIONS = [0, 1, 2, 3, 5, 10];
 
 type ScannerFunnelProps = {
-  campaigns: Campaign[];
   startDate: string;
   endDate: string;
-  dailyData: DailyAnalytics[];
 };
 
-export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData }: ScannerFunnelProps) {
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
-  const [emailBuckets, setEmailBuckets] = useState<EmailBucket[]>([]);
+type DailyResponse = { data: DailyCampaignSend[] };
+
+function buildRows(
+  sends: DailyCampaignSend[],
+  ga: GADailyRecord[],
+): FunnelDayRowType[] {
+  const byDate = new Map<string, FunnelDayRowType>();
+
+  for (const g of ga) {
+    byDate.set(g.date, {
+      date: g.date,
+      emailsSent: 0,
+      campaigns: [],
+      sessions: g.sessions,
+      formSubmits: g.formSubmits,
+      bookings: g.bookingConfirmed,
+    });
+  }
+
+  for (const s of sends) {
+    let row = byDate.get(s.date);
+    if (!row) {
+      row = {
+        date: s.date,
+        emailsSent: 0,
+        campaigns: [],
+        sessions: 0,
+        formSubmits: 0,
+        bookings: 0,
+      };
+      byDate.set(s.date, row);
+    }
+    row.emailsSent += s.sent;
+    row.campaigns.push({
+      campaignId: s.campaignId,
+      campaignName: s.campaignName,
+      sent: s.sent,
+    });
+  }
+
+  for (const row of byDate.values()) {
+    row.campaigns.sort((a, b) => b.sent - a.sent);
+  }
+
+  return [...byDate.values()].sort((a, b) => b.date.localeCompare(a.date));
+}
+
+export default function ScannerFunnel({ startDate, endDate }: ScannerFunnelProps) {
+  const [sends, setSends] = useState<DailyCampaignSend[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [partial, setPartial] = useState(false);
   const [minFormSubmits, setMinFormSubmits] = useState(3);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
 
-    const fetchEmailData = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -44,19 +82,14 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
           start_date: startDate,
           end_date: endDate,
         });
-        if (selectedCampaignId) {
-          params.set('campaign_id', selectedCampaignId);
-        }
-
-        const res = await fetch(`/api/emails/hourly?${params}`, {
+        const res = await fetch(`/api/emails/daily?${params}`, {
           signal: controller.signal,
         });
         if (!res.ok) {
-          throw new Error('Failed to fetch email data');
+          throw new Error('Failed to fetch daily send data');
         }
-        const result: EmailDetailResponse = await res.json();
-        setEmailBuckets(result.data);
-        setPartial(result.partial);
+        const result: DailyResponse = await res.json();
+        setSends(result.data);
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -67,68 +100,38 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
       }
     };
 
-    fetchEmailData();
+    fetchData();
     return () => controller.abort();
-  }, [startDate, endDate, selectedCampaignId, retryKey]);
+  }, [startDate, endDate, retryKey]);
 
   const filteredGA = useMemo(
     () => filterGAByDateRange(GA_DAILY_DATA, startDate, endDate),
     [startDate, endDate],
   );
 
-  const dailyOpens = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const d of dailyData) {
-      map.set(d.date, d.unique_opened);
-    }
-    return map;
-  }, [dailyData]);
-
-  const allRows: FunnelDayRowType[] = useMemo(
-    () => buildFunnelDayRows(emailBuckets, filteredGA, dailyOpens),
-    [emailBuckets, filteredGA, dailyOpens],
-  );
+  const allRows = useMemo(() => buildRows(sends, filteredGA), [sends, filteredGA]);
 
   const filteredRows = useMemo(
     () => allRows.filter((r) => r.formSubmits >= minFormSubmits),
     [allRows, minFormSubmits],
   );
 
-  const activeCampaigns = campaigns.filter((c) => c.status === 1);
-
   return (
     <section className="bg-surface rounded-lg border border-border-default overflow-hidden">
       <div className="px-6 py-4 border-b border-border-default flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-text-heading">Scanner Funnel Performance</h3>
-        <div className="flex items-center gap-4 flex-wrap">
-          {/* Form submit filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest font-bold text-text-body">
-              Min Submits
-            </span>
-            <select
-              value={minFormSubmits}
-              onChange={(e) => setMinFormSubmits(Number(e.target.value))}
-              className="text-xs bg-surface-elevated border-none rounded-md px-2 py-1 mono text-text-heading"
-            >
-              {MIN_SUBMITS_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n === 0 ? 'All' : `≥ ${n}`}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Campaign selector */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-widest font-bold text-text-body">
+            Min Submits
+          </span>
           <select
-            value={selectedCampaignId}
-            onChange={(e) => setSelectedCampaignId(e.target.value)}
-            className="text-xs bg-surface-elevated border-none rounded-md px-2 py-1 text-text-heading max-w-[200px]"
+            value={minFormSubmits}
+            onChange={(e) => setMinFormSubmits(Number(e.target.value))}
+            className="text-xs bg-surface-elevated border-none rounded-md px-2 py-1 mono text-text-heading"
           >
-            <option value="">All Campaigns</option>
-            {activeCampaigns.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
+            {MIN_SUBMITS_OPTIONS.map((n) => (
+              <option key={n} value={n}>
+                {n === 0 ? 'All' : `≥ ${n}`}
               </option>
             ))}
           </select>
@@ -142,7 +145,7 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
               className="w-5 h-5 border-2 rounded-full animate-spin"
               style={{ borderColor: 'var(--spinner-track)', borderTopColor: 'var(--spinner-fill)' }}
             />
-            Loading email data...
+            Loading daily send data...
           </div>
         </div>
       ) : error ? (
@@ -156,51 +159,43 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
           </button>
         </div>
       ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
-              <thead>
-                <tr className="bg-surface-elevated border-b border-border-default">
-                  <th className="text-left py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">
-                    Date
-                  </th>
-                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
-                    Emails Sent
-                  </th>
-                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
-                    Opens
-                  </th>
-                  <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
-                    Sessions
-                  </th>
-                  <th className="text-right py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">
-                    Form Submits
-                  </th>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className="bg-surface-elevated border-b border-border-default">
+                <th className="text-left py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">
+                  Date
+                </th>
+                <th className="text-left py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
+                  Campaigns Sending
+                </th>
+                <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
+                  Sent
+                </th>
+                <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
+                  Sessions
+                </th>
+                <th className="text-right py-3 px-4 text-[10px] uppercase tracking-widest text-text-body font-bold">
+                  Form Submits
+                </th>
+                <th className="text-right py-3 px-6 text-[10px] uppercase tracking-widest text-text-body font-bold">
+                  Bookings
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border-default">
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-text-muted text-sm">
+                    No days match the current filters
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-border-default">
-                {filteredRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="text-center py-8 text-text-muted text-sm">
-                      No days match the current filters
-                    </td>
-                  </tr>
-                ) : (
-                  filteredRows.map((row) => (
-                    <FunnelDayRow key={row.date} row={row} />
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          {partial && (
-            <div className="px-6 py-3 border-t border-border-default">
-              <p className="text-[10px] text-text-muted">
-                Email data may be incomplete — API pagination limit reached
-              </p>
-            </div>
-          )}
-        </>
+              ) : (
+                filteredRows.map((row) => <FunnelDayRow key={row.date} row={row} />)
+              )}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

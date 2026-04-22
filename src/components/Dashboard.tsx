@@ -201,12 +201,7 @@ export default function Dashboard() {
 
             {/* Scanner Funnel Performance */}
             <section>
-              <ScannerFunnel
-                campaigns={campaigns}
-                startDate={range.startDate}
-                endDate={range.endDate}
-                dailyData={dailyData}
-              />
+              <ScannerFunnel startDate={range.startDate} endDate={range.endDate} />
             </section>
 
             {/* Campaign Table */}

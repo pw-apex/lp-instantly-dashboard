@@ -136,27 +136,19 @@ export type CorrelatedDailyRecord = {
 
 // Scanner Funnel types
 
-export type EmailBucket = {
+export type DailyCampaignSend = {
   date: string;
-  hour: number;
   campaignId: string;
-  step: string;        // "0_3_0"
-  stepNumber: number;  // 1-based display
-  subject: string;
-  count: number;
-};
-
-export type EmailDetailResponse = {
-  data: EmailBucket[];
-  partial: boolean;
-  pagesLoaded: number;
-  totalEmails: number;
+  campaignName: string;
+  sent: number;
+  opened: number;
 };
 
 export type FunnelDayRow = {
   date: string;
   emailsSent: number;
-  opens: number;
+  campaigns: { campaignId: string; campaignName: string; sent: number }[];
   sessions: number;
   formSubmits: number;
+  bookings: number;
 };
