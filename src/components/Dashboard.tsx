@@ -76,23 +76,31 @@ export default function Dashboard() {
   const totalFollowups = totalSent - totalNew;
   const totalOpens = analytics.reduce((sum, a) => sum + (a.open_count_unique || 0), 0);
   const totalReplies = analytics.reduce((sum, a) => sum + (a.reply_count_unique || a.reply_count || 0), 0);
-  const totalClicks = analytics.reduce((sum, a) => sum + (a.link_click_count || 0), 0);
   const totalBounces = analytics.reduce((sum, a) => sum + (a.bounced_count || 0), 0);
-  const totalOpps = analytics.reduce((sum, a) => sum + (a.total_opportunities || 0), 0);
 
   const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : '0.0';
   const replyRate = totalNew > 0 ? ((totalReplies / totalNew) * 100).toFixed(1) : '0.0';
   const bounceRate = totalSent > 0 ? ((totalBounces / totalSent) * 100).toFixed(1) : '0.0';
 
+  // Click rate: only campaigns with link tracking enabled
+  const trackedCampaignIds = new Set(
+    campaigns.filter((c) => c.link_tracking).map((c) => c.id),
+  );
+  const trackedAnalytics = analytics.filter(
+    (a) => a.campaign_id && trackedCampaignIds.has(a.campaign_id),
+  );
+  const trackedSent = trackedAnalytics.reduce((sum, a) => sum + (a.emails_sent_count || 0), 0);
+  const trackedClicks = trackedAnalytics.reduce(
+    (sum, a) => sum + (a.link_click_count_unique ?? a.link_click_count ?? 0),
+    0,
+  );
+  const clickRate = trackedSent > 0 ? ((trackedClicks / trackedSent) * 100).toFixed(1) : '0.0';
+
   // GA data (hardcoded, filtered by same date range)
   const range = getDateRange(datePreset, customStart, customEnd);
   const filteredGA = filterGAByDateRange(GA_DAILY_DATA, range.startDate, range.endDate);
   const totalGASessions = filteredGA.reduce((sum, d) => sum + d.sessions, 0);
-  const totalGAEngaged = filteredGA.reduce((sum, d) => sum + d.engagedSessions, 0);
   const totalFormSubmits = filteredGA.reduce((sum, d) => sum + d.formSubmits, 0);
-  const gaEngagementRate = totalGASessions > 0
-    ? ((totalGAEngaged / totalGASessions) * 100).toFixed(1)
-    : '0.0';
   const correlatedData = correlateData(dailyData, filteredGA);
 
   // Merge campaigns with analytics
@@ -171,15 +179,12 @@ export default function Dashboard() {
               />
               <KpiCard label="Reply Rate" value={`${replyRate}%`} />
               <KpiCard label="Bounce Rate" value={`${bounceRate}%`} />
-              <KpiCard label="Opportunities" value={totalOpps} />
               <KpiCard
-                label="LP Sessions"
-                value={totalGASessions}
-                subValues={[
-                  { label: 'Engaged', value: totalGAEngaged },
-                  { label: 'Eng. Rate', value: `${gaEngagementRate}%` },
-                ]}
+                label="Click Rate"
+                value={`${clickRate}%`}
+                tooltip="Calculated only for campaigns with link tracking enabled. Campaigns with tracking disabled are excluded."
               />
+              <KpiCard label="LP Sessions" value={totalGASessions} />
               <KpiCard label="Form Submits" value={totalFormSubmits} />
             </section>
 

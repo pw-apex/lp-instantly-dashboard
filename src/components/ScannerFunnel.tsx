@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import FunnelDayRow from './FunnelDayRow';
-import { GA_HOURLY_DATA } from '@/lib/ga-data';
+import { GA_DAILY_DATA } from '@/lib/ga-data';
 import {
-  filterGAHourlyByDateRange,
+  filterGAByDateRange,
   buildFunnelDayRows,
 } from '@/lib/ga-aggregation';
 import type {
@@ -71,16 +71,8 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
     return () => controller.abort();
   }, [startDate, endDate, selectedCampaignId, retryKey]);
 
-  const campaignNames = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const c of campaigns) {
-      map.set(c.id, c.name);
-    }
-    return map;
-  }, [campaigns]);
-
   const filteredGA = useMemo(
-    () => filterGAHourlyByDateRange(GA_HOURLY_DATA, startDate, endDate),
+    () => filterGAByDateRange(GA_DAILY_DATA, startDate, endDate),
     [startDate, endDate],
   );
 
@@ -93,8 +85,8 @@ export default function ScannerFunnel({ campaigns, startDate, endDate, dailyData
   }, [dailyData]);
 
   const allRows: FunnelDayRowType[] = useMemo(
-    () => buildFunnelDayRows(emailBuckets, filteredGA, campaignNames, dailyOpens),
-    [emailBuckets, filteredGA, campaignNames, dailyOpens],
+    () => buildFunnelDayRows(emailBuckets, filteredGA, dailyOpens),
+    [emailBuckets, filteredGA, dailyOpens],
   );
 
   const filteredRows = useMemo(

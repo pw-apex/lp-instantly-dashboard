@@ -26,6 +26,8 @@ export default function CorrelationChart({ data }: CorrelationChartProps) {
     'Follow-ups': d.sent - d.newContacts,
     Sessions: d.sessions,
     'Form Submits': d.formSubmits,
+    'View Search Results': d.viewSearchResults,
+    'Booking Confirmed': d.bookingConfirmed,
   }));
 
   return (
@@ -46,8 +48,16 @@ export default function CorrelationChart({ data }: CorrelationChartProps) {
             <span className="text-[10px] font-medium text-text-body uppercase">Sessions</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: theme.gaFormSubmits }} />
+            <span className="w-2.5 h-[2px]" style={{ backgroundColor: theme.gaFormSubmits }} />
             <span className="text-[10px] font-medium text-text-body uppercase">Form Submits</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-[2px]" style={{ backgroundColor: theme.gaViewSearchResults }} />
+            <span className="text-[10px] font-medium text-text-body uppercase">View Search Results</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-[2px]" style={{ backgroundColor: theme.gaBookingConfirmed }} />
+            <span className="text-[10px] font-medium text-text-body uppercase">Booking Confirmed</span>
           </div>
         </div>
       </div>
@@ -61,8 +71,10 @@ export default function CorrelationChart({ data }: CorrelationChartProps) {
             <Tooltip contentStyle={theme.tooltipStyle} />
             <Bar yAxisId="left" dataKey="New Contacts" stackId="sends" fill={theme.chart1} radius={[0, 0, 0, 0]} />
             <Bar yAxisId="left" dataKey="Follow-ups" stackId="sends" fill={theme.chart2} radius={[2, 2, 0, 0]} />
-            <Bar yAxisId="right" dataKey="Form Submits" fill={theme.gaFormSubmits} radius={[2, 2, 0, 0]} barSize={8} />
             <Line yAxisId="right" type="monotone" dataKey="Sessions" stroke={theme.gaSessions} strokeWidth={2} dot={false} />
+            <Line yAxisId="right" type="monotone" dataKey="Form Submits" stroke={theme.gaFormSubmits} strokeWidth={2} dot={false} />
+            <Line yAxisId="right" type="monotone" dataKey="View Search Results" stroke={theme.gaViewSearchResults} strokeWidth={2} dot={false} />
+            <Line yAxisId="right" type="monotone" dataKey="Booking Confirmed" stroke={theme.gaBookingConfirmed} strokeWidth={2} dot={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>

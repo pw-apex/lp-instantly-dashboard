@@ -112,24 +112,12 @@ export interface DateRangeValue {
 
 // Google Analytics types
 
-export type GAHourlyRecord = {
-  dateHour: string;       // original YYYYMMDDHH
-  date: string;           // derived YYYY-MM-DD
-  hour: number;           // derived 0-23
-  sessions: number;
-  engagedSessions: number;
-  engagementRate: number;
-  avgEngagementTime: number;
-  eventsPerSession: number;
-  formSubmits: number;
-};
-
 export type GADailyRecord = {
-  date: string;           // YYYY-MM-DD, matches DailyAnalytics.date
+  date: string;              // YYYY-MM-DD, matches DailyAnalytics.date
   sessions: number;
-  engagedSessions: number;
-  engagementRate: number; // weighted average by sessions
   formSubmits: number;
+  viewSearchResults: number;
+  bookingConfirmed: number;
 };
 
 export type CorrelatedDailyRecord = {
@@ -141,9 +129,9 @@ export type CorrelatedDailyRecord = {
   replies: number;
   // GA fields
   sessions: number;
-  engagedSessions: number;
   formSubmits: number;
-  engagementRate: number;
+  viewSearchResults: number;
+  bookingConfirmed: number;
 };
 
 // Scanner Funnel types
@@ -165,26 +153,10 @@ export type EmailDetailResponse = {
   totalEmails: number;
 };
 
-export type FunnelHourEmail = {
-  campaignName: string;
-  stepNumber: number;
-  subject: string;
-  count: number;
-};
-
-export type FunnelHourSlot = {
-  hour: number;
-  sent: number;
-  sessions: number;
-  formSubmits: number;
-  emails: FunnelHourEmail[];
-};
-
 export type FunnelDayRow = {
   date: string;
   emailsSent: number;
   opens: number;
   sessions: number;
   formSubmits: number;
-  hourly: FunnelHourSlot[];
 };
