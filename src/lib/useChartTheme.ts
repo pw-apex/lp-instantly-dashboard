@@ -14,6 +14,8 @@ type ChartTheme = {
   engagementFill2Start: string;
   gaSessions: string;
   gaFormSubmits: string;
+  gaViewSearchResults: string;
+  gaBookingConfirmed: string;
   tooltipStyle: {
     background: string;
     border: string;
@@ -35,6 +37,8 @@ const lightTheme: ChartTheme = {
   engagementFill2Start: 'rgba(9, 9, 11, 0.1)',
   gaSessions: '#3b82f6',
   gaFormSubmits: '#22c55e',
+  gaViewSearchResults: '#f59e0b',
+  gaBookingConfirmed: '#a855f7',
   tooltipStyle: {
     background: '#ffffff',
     border: '1px solid #e4e4e7',
@@ -56,6 +60,8 @@ const darkTheme: ChartTheme = {
   engagementFill2Start: 'rgba(250, 250, 250, 0.08)',
   gaSessions: '#60a5fa',
   gaFormSubmits: '#4ade80',
+  gaViewSearchResults: '#fbbf24',
+  gaBookingConfirmed: '#c084fc',
   tooltipStyle: {
     background: '#18181b',
     border: '1px solid #27272a',
