@@ -1,9 +1,14 @@
 import type { GADailyRecord } from './types';
 
-// Parsed from "LP GA4 data up to 22 april - Tab 3.csv".
-// Source filter: "instantly / email". Events kept: session_start, form_submit,
-// view_search_results, booking-confirmed. Sessions from session_start.Sessions;
-// event counts from each event's Event count column.
+// Source filter: "instantly / email".
+// Rows for 2026-02-23 through 2026-04-21 parsed from
+// "LP GA4 data up to 22 april - Tab 3.csv" — events kept: session_start,
+// form_submit, view_search_results, booking-confirmed. Sessions from
+// session_start.Sessions; event counts from each event's Event count column.
+// Rows for 2026-04-22 through 2026-04-30 parsed from
+// "LP Outbound GA4 report April - Traffic acquisition_ Session source _ medium.csv";
+// that report only provides Sessions and Form Submits, so viewSearchResults
+// and bookingConfirmed are 0 for those dates.
 export const GA_DAILY_DATA: GADailyRecord[] = [
   { date: '2026-02-23', sessions: 1, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
   { date: '2026-02-24', sessions: 2, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
@@ -49,5 +54,12 @@ export const GA_DAILY_DATA: GADailyRecord[] = [
   { date: '2026-04-16', sessions: 58, formSubmits: 2, viewSearchResults: 2, bookingConfirmed: 0 },
   { date: '2026-04-17', sessions: 68, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
   { date: '2026-04-20', sessions: 87, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
-  { date: '2026-04-21', sessions: 78, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-04-21', sessions: 89, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-04-22', sessions: 84, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-23', sessions: 48, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-24', sessions: 2, formSubmits: 21, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-27', sessions: 2, formSubmits: 3, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-28', sessions: 7, formSubmits: 4, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-29', sessions: 3, formSubmits: 3, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-30', sessions: 106, formSubmits: 5, viewSearchResults: 0, bookingConfirmed: 0 },
 ];
