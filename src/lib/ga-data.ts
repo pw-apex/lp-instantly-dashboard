@@ -5,10 +5,14 @@ import type { GADailyRecord } from './types';
 // "LP GA4 data up to 22 april - Tab 3.csv" — events kept: session_start,
 // form_submit, view_search_results, booking-confirmed. Sessions from
 // session_start.Sessions; event counts from each event's Event count column.
-// Rows for 2026-04-22 through 2026-04-30 parsed from
+// Rows for 2026-04-22 through 2026-04-30 originally came from
 // "LP Outbound GA4 report April - Traffic acquisition_ Session source _ medium.csv";
-// that report only provides Sessions and Form Submits, so viewSearchResults
-// and bookingConfirmed are 0 for those dates.
+// that report only provided Sessions and Form Submits.
+// Rows for 2026-05-01 through 2026-05-28 — and the viewSearchResults for the
+// late-April dates above — parsed from the full event-level export
+// "Instanty daily event performance-Tab 3 (20260228-20260528)". Same mapping:
+// sessions from session_start.Sessions; form_submit / view_search_results /
+// booking-confirmed from each event's Event count column.
 export const GA_DAILY_DATA: GADailyRecord[] = [
   { date: '2026-02-23', sessions: 1, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
   { date: '2026-02-24', sessions: 2, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
@@ -57,9 +61,31 @@ export const GA_DAILY_DATA: GADailyRecord[] = [
   { date: '2026-04-21', sessions: 89, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
   { date: '2026-04-22', sessions: 84, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
   { date: '2026-04-23', sessions: 48, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
-  { date: '2026-04-24', sessions: 2, formSubmits: 21, viewSearchResults: 0, bookingConfirmed: 0 },
-  { date: '2026-04-27', sessions: 2, formSubmits: 3, viewSearchResults: 0, bookingConfirmed: 0 },
-  { date: '2026-04-28', sessions: 7, formSubmits: 4, viewSearchResults: 0, bookingConfirmed: 0 },
-  { date: '2026-04-29', sessions: 3, formSubmits: 3, viewSearchResults: 0, bookingConfirmed: 0 },
-  { date: '2026-04-30', sessions: 106, formSubmits: 5, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-04-24', sessions: 2, formSubmits: 21, viewSearchResults: 21, bookingConfirmed: 0 },
+  { date: '2026-04-27', sessions: 2, formSubmits: 3, viewSearchResults: 2, bookingConfirmed: 0 },
+  { date: '2026-04-28', sessions: 7, formSubmits: 4, viewSearchResults: 3, bookingConfirmed: 0 },
+  { date: '2026-04-29', sessions: 3, formSubmits: 3, viewSearchResults: 2, bookingConfirmed: 0 },
+  { date: '2026-04-30', sessions: 106, formSubmits: 5, viewSearchResults: 3, bookingConfirmed: 0 },
+  { date: '2026-05-01', sessions: 8, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-03', sessions: 1, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-04', sessions: 40, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-06', sessions: 2, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-07', sessions: 37, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-08', sessions: 61, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-11', sessions: 22, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-12', sessions: 56, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-13', sessions: 138, formSubmits: 2, viewSearchResults: 2, bookingConfirmed: 0 },
+  { date: '2026-05-14', sessions: 111, formSubmits: 3, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-15', sessions: 1, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-18', sessions: 25, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-19', sessions: 107, formSubmits: 2, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-20', sessions: 51, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-21', sessions: 35, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-22', sessions: 35, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-23', sessions: 2, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-24', sessions: 1, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-25', sessions: 29, formSubmits: 2, viewSearchResults: 2, bookingConfirmed: 0 },
+  { date: '2026-05-26', sessions: 25, formSubmits: 3, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-27', sessions: 35, formSubmits: 2, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-05-28', sessions: 2, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
 ];
