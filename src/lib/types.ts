@@ -115,7 +115,8 @@ export interface DateRangeValue {
 export type GADailyRecord = {
   date: string;              // YYYY-MM-DD, matches DailyAnalytics.date
   sessions: number;
-  formSubmits: number;
+  formSubmits: number;       // generic form_submit event count
+  mqlFormSubmits: number;    // mql_form_submit event count (qualified subset); tracked, not yet displayed
   viewSearchResults: number;
   bookingConfirmed: number;
 };

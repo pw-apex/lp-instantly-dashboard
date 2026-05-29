@@ -4,10 +4,10 @@ import type { GADailyRecord, DailyAnalytics } from './types';
 
 describe('filterGAByDateRange', () => {
   const daily: GADailyRecord[] = [
-    { date: '2026-03-01', sessions: 10, formSubmits: 1, viewSearchResults: 0, bookingConfirmed: 0 },
-    { date: '2026-03-15', sessions: 20, formSubmits: 2, viewSearchResults: 1, bookingConfirmed: 0 },
-    { date: '2026-04-01', sessions: 30, formSubmits: 3, viewSearchResults: 2, bookingConfirmed: 1 },
-    { date: '2026-04-08', sessions: 40, formSubmits: 4, viewSearchResults: 3, bookingConfirmed: 0 },
+    { date: '2026-03-01', sessions: 10, formSubmits: 1, mqlFormSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+    { date: '2026-03-15', sessions: 20, formSubmits: 2, mqlFormSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+    { date: '2026-04-01', sessions: 30, formSubmits: 3, mqlFormSubmits: 0, viewSearchResults: 2, bookingConfirmed: 1 },
+    { date: '2026-04-08', sessions: 40, formSubmits: 4, mqlFormSubmits: 0, viewSearchResults: 3, bookingConfirmed: 0 },
   ];
 
   it('filters to date range (inclusive)', () => {
@@ -34,7 +34,7 @@ describe('correlateData', () => {
       { date: '2026-03-16', sent: 500, contacted: 400, new_leads_contacted: 300, opened: 200, unique_opened: 150, replies: 10, unique_replies: 8, clicks: 5, unique_clicks: 4, opportunities: 1 },
     ];
     const ga: GADailyRecord[] = [
-      { date: '2026-03-16', sessions: 107, formSubmits: 2, viewSearchResults: 4, bookingConfirmed: 1 },
+      { date: '2026-03-16', sessions: 107, formSubmits: 2, mqlFormSubmits: 1, viewSearchResults: 4, bookingConfirmed: 1 },
     ];
 
     const result = correlateData(instantly, ga);
@@ -69,7 +69,7 @@ describe('correlateData', () => {
   it('includes dates only in GA with Instantly fields as 0', () => {
     const instantly: DailyAnalytics[] = [];
     const ga: GADailyRecord[] = [
-      { date: '2026-03-29', sessions: 5, formSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
+      { date: '2026-03-29', sessions: 5, formSubmits: 1, mqlFormSubmits: 0, viewSearchResults: 1, bookingConfirmed: 0 },
     ];
 
     const result = correlateData(instantly, ga);
@@ -84,7 +84,7 @@ describe('correlateData', () => {
       { date: '2026-04-01', sent: 100, contacted: 50, new_leads_contacted: 50, opened: 40, unique_opened: 35, replies: 3, unique_replies: 2, clicks: 1, unique_clicks: 1, opportunities: 0 },
     ];
     const ga: GADailyRecord[] = [
-      { date: '2026-03-01', sessions: 10, formSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+      { date: '2026-03-01', sessions: 10, formSubmits: 0, mqlFormSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
     ];
 
     const result = correlateData(instantly, ga);
