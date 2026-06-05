@@ -13,6 +13,11 @@ import type { GADailyRecord } from './types';
 // mqlFormSubmits for the late-April dates above — parsed from the full
 // event-level export "Instanty daily event performance-Tab 3
 // (20260228-20260528)". Same mapping as above.
+// Rows for 2026-05-29 through 2026-06-04 parsed from the 14-day export
+// "Scanner.luxurypresence.com — Instanty daily event performance-Tab 3
+// (20260522-20260604)". Same mapping; May 22–28 in that export matched the
+// existing values. Dates with no events in the export (e.g. 2026-05-30,
+// 2026-05-31) are omitted, consistent with prior zero-activity gaps.
 // mqlFormSubmits (mql_form_submit) is a qualified subset of form_submit and is
 // NOT added into formSubmits, to avoid double-counting.
 export const GA_DAILY_DATA: GADailyRecord[] = [
@@ -90,4 +95,9 @@ export const GA_DAILY_DATA: GADailyRecord[] = [
   { date: '2026-05-26', sessions: 25, formSubmits: 3, mqlFormSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
   { date: '2026-05-27', sessions: 35, formSubmits: 2, mqlFormSubmits: 1, viewSearchResults: 1, bookingConfirmed: 0 },
   { date: '2026-05-28', sessions: 2, formSubmits: 0, mqlFormSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-05-29', sessions: 3, formSubmits: 4, mqlFormSubmits: 0, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-06-01', sessions: 9, formSubmits: 2, mqlFormSubmits: 0, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-06-02', sessions: 2, formSubmits: 0, mqlFormSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
+  { date: '2026-06-03', sessions: 5, formSubmits: 4, mqlFormSubmits: 0, viewSearchResults: 1, bookingConfirmed: 0 },
+  { date: '2026-06-04', sessions: 7, formSubmits: 2, mqlFormSubmits: 0, viewSearchResults: 0, bookingConfirmed: 0 },
 ];
